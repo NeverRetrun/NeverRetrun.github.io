@@ -1,0 +1,247 @@
+
+<!DOCTYPE html>
+<html lang="">
+
+
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="theme-color" content="#202020">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  
+    <meta name="keywords" content>
+  
+
+  
+    <meta name="description" content="源码解析-EasySwoole框架">
+  
+  
+  <link rel="icon" type="image/x-icon" href="/logo.png">
+  <title>源码解析-EasySwoole框架 [ Void ]</title>
+  
+    <!-- stylesheets list from config.yml -->
+    
+      <link rel="stylesheet" href="//cdn.bootcss.com/pure/1.0.0/pure-min.css">
+    
+      <link rel="stylesheet" href="/css/microb.css">
+    
+      <link rel="stylesheet" href="/css/iconfont.css">
+    
+  
+</head>
+
+<body>
+  <nav class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
+  <!-- <ul class="pure-menu-list float-r clearfix">
+    
+      <li class="pure-menu-item toc-menu">
+        <a id="menu-main-post" class="pure-menu-link" href="javascript:;">
+          <img class="menu-icon" src="/logo.png" alt="MENU">
+        </a>
+      </li>
+    
+  </ul>   -->
+  <a class="pure-menu-heading" href="/">
+      <h1 class="title">Void</h1>
+      <!-- <span>一个后端程序员</span> -->
+  </a>
+
+  <a href="/about" class="pure-menu-item pure-menu-has-children">
+    <h2 class="subtitle">about</h2>
+  </a>
+
+  <!-- 
+  <img class="logo" id="logo" src="/logo.png" alt="logo">
+   -->
+</nav>
+
+  <div class="container" id="content-outer">
+    <div class="inner" id="content-inner">
+      <article class="post" id="post">
+  <header class="post-header text-center">
+    <h1 class="title">
+      源码解析-EasySwoole框架
+    </h1>
+    
+    <time class="time" datetime="2019-08-12T14:16:45.000Z">
+      2019-08-12
+    </time>
+    
+    <hr>
+  </header>
+  <div class="post-content">
+    <p>EasySwoole</p>
+<hr>
+<p>我已经刷过好几次EasySwoole的文档了，但是因为公司的服务器是Windows，导致我无法使用Swoole，只能只用PHP-FPM运行PHP。现在再看一下这个框架，并且了解一下Swoole。</p>
+<p>首先我已经根据<a href="https://www.easyswoole.com/Cn/Introduction/install.html" target="_blank" rel="noopener">文档</a>，搭建了一个Hello World了。具体代码如下</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> <span class="title">App</span>\<span class="title">HttpController</span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">use</span> <span class="title">EasySwoole</span>\<span class="title">Http</span>\<span class="title">AbstractInterface</span>\<span class="title">Controller</span>;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Index</span> <span class="keyword">extends</span> <span class="title">Controller</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">index</span><span class="params">()</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;response()-&gt;write(<span class="string">"hello world"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后运行 </p>
+<blockquote>
+<p>php easyswoole start</p>
+</blockquote>
+<p>这里就和Golang很像了，这个<strong>php easyswoole start</strong>和<strong>go run main.go</strong>应该差不多。那我们首先看<strong>easyswoole</strong>这个文件</p>
+<p>这个文件很简单呃，开头无非和其他框架一样，定义路径常量和引入自动加载。这里easyswoole是直接引用composer的自动加载。下面是比较关键的代码</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">$args = $argv;</span><br><span class="line"><span class="comment">//trim first command</span></span><br><span class="line">array_shift($args);</span><br><span class="line">$ret = CommandRunner::getInstance()-&gt;run($args);</span><br><span class="line"><span class="keyword">if</span>(!<span class="keyword">empty</span>($ret))&#123;</span><br><span class="line">    <span class="keyword">echo</span> $ret.<span class="string">"\n"</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>因为命令是php easyswoole start，所以这个array_shift应该是去除easyswoole。那个args应该是包含start字符串的一个数组。我们直接进CommandRunner这个类里。对了，这里额外提一句这里的getInstance是EasySwoole用Trait实现的一个单例模式，具体代码如下。这个代码也比较好懂，算是我之前对Trait使用的一个启蒙。</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">trait</span> Singleton</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> $instance;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="function"><span class="keyword">function</span> <span class="title">getInstance</span><span class="params">(...$args)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(!<span class="keyword">isset</span>(<span class="keyword">self</span>::$instance))&#123;</span><br><span class="line">            <span class="keyword">self</span>::$instance = <span class="keyword">new</span> <span class="keyword">static</span>(...$args);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">self</span>::$instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>进入CommandRunner类中run函数中做了help和install这两个命令的判断。其他均是靠一个hook函数调用，具体代码如下</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">return</span> CommandContainer::getInstance()-&gt;hook($command,$args);</span><br></pre></td></tr></table></figure>
+<p>那我们继续进入CommandContainer中。其实这个类顾名思义，是一个命令容器，运用注册树来注册类的实例。另外吐槽一下这里的源码，一些省略的public，一些不省略，无法理解 像两个人写的代码一样。下面是hook函数</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">hook</span><span class="params">($commandName, array $args)</span>:?<span class="title">string</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        $handler = <span class="keyword">$this</span>-&gt;get($commandName);</span><br><span class="line">        <span class="keyword">if</span>($handler)&#123;</span><br><span class="line">            <span class="keyword">return</span> $handler-&gt;exec($args);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>就是在这个容器中的实例根据命令的名字调用相对应的类，这里更奇怪了，$commandName这个变量还能不是String类型的么？为啥其他都标了，这个不标？</p>
+<p>如果要直接调用hook函数，那CommandContainer必须得提前有实例。在CommandRunner中的构造函数注册了实例。具体代码如下</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    CommandContainer::getInstance()-&gt;set(<span class="keyword">new</span> Help());</span><br><span class="line">    CommandContainer::getInstance()-&gt;set(<span class="keyword">new</span> Install());</span><br><span class="line">    CommandContainer::getInstance()-&gt;set(<span class="keyword">new</span> Start());</span><br><span class="line">    CommandContainer::getInstance()-&gt;set(<span class="keyword">new</span> Stop());</span><br><span class="line">    CommandContainer::getInstance()-&gt;set(<span class="keyword">new</span> Reload());</span><br><span class="line">    CommandContainer::getInstance()-&gt;set(<span class="keyword">new</span> PhpUnit());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>很明显我们是需要进入Start这个类，Start类刚开始是清除opcache(一个解决重复编译的扩展)，然后加载配置，最最关键的一个createServer() 就是启动的核心了。下面都是输出框架配置的相关信息。</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">exec</span><span class="params">(array $args)</span>: ?<span class="title">string</span></span></span><br><span class="line"><span class="function">  </span>&#123;</span><br><span class="line">      <span class="comment">// <span class="doctag">TODO:</span> Implement exec() method.</span></span><br><span class="line">      Utility::opCacheClear();</span><br><span class="line">      $response = Utility::easySwooleLog();</span><br><span class="line">      $mode = <span class="string">'develop'</span>;</span><br><span class="line">      <span class="keyword">if</span>(!Core::getInstance()-&gt;isDev())&#123;</span><br><span class="line">          $mode = <span class="string">'produce'</span>;</span><br><span class="line">      &#125;</span><br><span class="line">      $conf = Config::getInstance();</span><br><span class="line">      <span class="keyword">if</span>(in_array(<span class="string">"d"</span>,$args) || in_array(<span class="string">"daemonize"</span>,$args))&#123;</span><br><span class="line">          $conf-&gt;setConf(<span class="string">"MAIN_SERVER.SETTING.daemonize"</span>, <span class="keyword">true</span>);</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="comment">//create main Server</span></span><br><span class="line">      Core::getInstance()-&gt;createServer();</span><br><span class="line">      $serverType = $conf-&gt;getConf(<span class="string">'MAIN_SERVER.SERVER_TYPE'</span>);</span><br><span class="line">			......</span><br></pre></td></tr></table></figure>
+<p>然后我们进入createServer这个方法中，这里createSwooleServer这个方法进去就能看到熟悉的swoole函数了。这里根据配置创建相应的server。然后在registerDefaultCallBack中会注册服务的各种回调函数。</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">createServer</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    $conf = Config::getInstance()-&gt;getConf(<span class="string">'MAIN_SERVER'</span>);</span><br><span class="line">    ServerManager::getInstance()-&gt;createSwooleServer(</span><br><span class="line">        $conf[<span class="string">'PORT'</span>],$conf[<span class="string">'SERVER_TYPE'</span>],$conf[<span class="string">'LISTEN_ADDRESS'</span>],$conf[<span class="string">'SETTING'</span>],$conf[<span class="string">'RUN_MODEL'</span>],$conf[<span class="string">'SOCK_TYPE'</span>]</span><br><span class="line">    );</span><br><span class="line">    <span class="keyword">$this</span>-&gt;registerDefaultCallBack(ServerManager::getInstance()-&gt;getSwooleServer(),$conf[<span class="string">'SERVER_TYPE'</span>]);</span><br><span class="line">    <span class="comment">//hook 全局的mainServerCreate事件</span></span><br><span class="line">    EasySwooleEvent::mainServerCreate(ServerManager::getInstance()-&gt;getMainEventRegister());</span><br><span class="line">    <span class="keyword">$this</span>-&gt;extraHandler();</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">$this</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>因为这里的代码真的很长，所以我截取部分的代码，以下是registerDefaultCallBack。以下是onRequest的回调。</p>
+<p>这里开头初始化request和response就不看了。</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">EventHelper::on($server,EventRegister::onRequest,<span class="function"><span class="keyword">function</span> <span class="params">(\swoole_http_request $request,\swoole_http_response $response)</span><span class="title">use</span><span class="params">($dispatcher)</span></span>&#123;</span><br><span class="line">                $request_psr = <span class="keyword">new</span> Request($request);</span><br><span class="line">                $response_psr = <span class="keyword">new</span> Response($response);</span><br><span class="line">                <span class="keyword">try</span>&#123;</span><br><span class="line">                    <span class="keyword">if</span>(EasySwooleEvent::onRequest($request_psr,$response_psr))&#123;</span><br><span class="line">                        $dispatcher-&gt;dispatch($request_psr,$response_psr);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;<span class="keyword">catch</span> (\Throwable $throwable)&#123;</span><br><span class="line">                    call_user_func(Di::getInstance()-&gt;get(SysConst::HTTP_EXCEPTION_HANDLER),$throwable,$request_psr,$response_psr);</span><br><span class="line">                &#125;<span class="keyword">finally</span>&#123;</span><br><span class="line">                    <span class="keyword">try</span>&#123;</span><br><span class="line">                        EasySwooleEvent::afterRequest($request_psr,$response_psr);</span><br><span class="line">                    &#125;<span class="keyword">catch</span> (\Throwable $throwable)&#123;</span><br><span class="line">                        call_user_func(Di::getInstance()-&gt;get(SysConst::HTTP_EXCEPTION_HANDLER),$throwable,$request_psr,$response_psr);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">                $response_psr-&gt;__response();</span><br><span class="line">            &#125;);</span><br></pre></td></tr></table></figure>
+<p>我们这里看一下dispatch这个方法，这个方法主要是用来调度路由的。文档中很明确的说了EasySwoole的路由基于FastRoute，所以看见类似的写法也不要觉得奇怪。这里代码很乱，我主要截取一段FastRoute匹配的代码，下面的代码，使用过FastRoute的人应该很熟悉。</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span>(<span class="keyword">$this</span>-&gt;router <span class="keyword">instanceof</span> GroupCountBased)&#123;</span><br><span class="line">    $handler = <span class="keyword">null</span>;</span><br><span class="line">    $routeInfo = <span class="keyword">$this</span>-&gt;router-&gt;dispatch($request-&gt;getMethod(),$request-&gt;getUri()-&gt;getPath());</span><br><span class="line">    <span class="keyword">if</span>($routeInfo !== <span class="keyword">false</span>)&#123;</span><br><span class="line">        <span class="keyword">switch</span> ($routeInfo[<span class="number">0</span>]) &#123;</span><br><span class="line">            <span class="keyword">case</span> \FastRoute\Dispatcher::NOT_FOUND:&#123;</span><br><span class="line">                $handler = <span class="keyword">$this</span>-&gt;routerRegister-&gt;getRouterNotFoundCallBack();</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">case</span> \FastRoute\Dispatcher::METHOD_NOT_ALLOWED:&#123;</span><br><span class="line">                $handler = <span class="keyword">$this</span>-&gt;routerRegister-&gt;getMethodNotAllowCallBack();</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">case</span> \FastRoute\Dispatcher::FOUND:&#123;</span><br><span class="line">                $handler = $routeInfo[<span class="number">1</span>];</span><br><span class="line">                <span class="comment">//合并解析出来的数据</span></span><br><span class="line">                $vars = $routeInfo[<span class="number">2</span>];</span><br><span class="line">                $data = $request-&gt;getQueryParams();</span><br><span class="line">                $request-&gt;withQueryParams($vars+$data);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">default</span>:&#123;</span><br><span class="line">                $handler = <span class="keyword">$this</span>-&gt;routerRegister-&gt;getRouterNotFoundCallBack();</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>然后剩下的地方就交给大家。其实到这里也差不多了，可能后续还有一些钩子，路由后面就是业务代码来接管了。EasySwoole的源码还是比较简单的，比较合适用来学习。</p>
+<p>其实到这里我也在思考，看源码到底为了什么。我觉得学习的过程就是在不断临摹，但是我发现我看完代码后，竟然没有感觉，只是觉得 噢 看完了。可能之前的感触比较大吧，第一次看到用Trait来实现单例，第一次看到有人封装Array函数来避免PHP Array函数的缺陷（各种参数不一致，命名很奇怪之类的）。</p>
+<hr>
+<p>这里我们再看一个组件，就是EasySwoole的Response。因为换我写的话，我要么是用ob函数，要么直接echo。我在这里看到了一种新的写法。</p>
+<p>我们回到一开始的调用hello wrold的代码</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Index</span> <span class="keyword">extends</span> <span class="title">Controller</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">index</span><span class="params">()</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;response()-&gt;write(<span class="string">"hello world"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>OK 这里应该没有问题，直接进入write函数</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">write</span><span class="params">(string $str)</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(!<span class="keyword">$this</span>-&gt;isEndResponse())&#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;getBody()-&gt;write($str);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里我们看一下getBody()函数，毕竟是因为它来调用write函数的</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">getBody</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// <span class="doctag">TODO:</span> Implement getBody() method.</span></span><br><span class="line">    <span class="keyword">if</span>(<span class="keyword">$this</span>-&gt;body == <span class="keyword">null</span>)&#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;body = <span class="keyword">new</span> Stream(<span class="string">''</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">$this</span>-&gt;body;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里getBody这个函数中实例化了一个Stream类，OK 我们点进去看下</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Stream</span> <span class="keyword">extends</span> <span class="title">SplStream</span> <span class="keyword">implements</span> <span class="title">StreamInterface</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>没有Trait，只有继承，那我们就继续看它的父类</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">($resource = <span class="string">''</span>,$mode = <span class="string">'r+'</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">switch</span> (gettype($resource)) &#123;</span><br><span class="line">        <span class="keyword">case</span> <span class="string">'resource'</span>: &#123;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;stream = $resource;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">case</span> <span class="string">'object'</span>:&#123;</span><br><span class="line">            <span class="keyword">if</span>(method_exists($resource, <span class="string">'__toString'</span>)) &#123;</span><br><span class="line">                $resource = $resource-&gt;__toString();</span><br><span class="line">                <span class="keyword">$this</span>-&gt;stream = fopen(<span class="string">'php://memory'</span>, $mode);</span><br><span class="line">                <span class="keyword">if</span> ($resource !== <span class="string">''</span>) &#123;</span><br><span class="line">                    fwrite(<span class="keyword">$this</span>-&gt;stream, $resource);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> \InvalidArgumentException(<span class="string">'Invalid resource type: '</span> . gettype($resource));</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">default</span>:&#123;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;stream  = fopen(<span class="string">'php://memory'</span>, $mode);</span><br><span class="line">            <span class="keyword">try</span>&#123;</span><br><span class="line">                $resource = (string)$resource;</span><br><span class="line">                <span class="keyword">if</span> ($resource !== <span class="string">''</span>) &#123;</span><br><span class="line">                    fwrite(<span class="keyword">$this</span>-&gt;stream, $resource);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;<span class="keyword">catch</span> (\<span class="keyword">Exception</span> $exception)&#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> \InvalidArgumentException(<span class="string">'Invalid resource type: '</span> . gettype($resource));</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    $info = stream_get_meta_data(<span class="keyword">$this</span>-&gt;stream);</span><br><span class="line">    <span class="keyword">$this</span>-&gt;seekable = $info[<span class="string">'seekable'</span>];</span><br><span class="line">    <span class="keyword">$this</span>-&gt;readable = <span class="keyword">isset</span>(<span class="keyword">$this</span>-&gt;readList[$info[<span class="string">'mode'</span>]]);</span><br><span class="line">    <span class="keyword">$this</span>-&gt;writable =  <span class="keyword">isset</span>(<span class="keyword">$this</span>-&gt;writeList[$info[<span class="string">'mode'</span>]]);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这上面是SplStream类的构造函数，我们回头看下刚开始实例化传参是一个字符串，很明显是进入了default这里。$this-&gt;stream = fopen(‘php://memory’, $mode); 这里就是比较关键的了</p>
+<p>下面是PHP文档中对fopen这个函数封装支持的各种协议</p>
+<p><img src="https://i.loli.net/2019/08/12/xyeCY1Hn4Zk2pD9.png" alt="PHP协议"></p>
+<p>然后在php://中还有</p>
+<ol>
+<li>Php://stdin, php://stdout, php://stderr</li>
+<li>Php://input , php://output</li>
+<li>php://fd</li>
+<li>Php://memory , php://temp</li>
+<li>Php://filter</li>
+</ol>
+<p>具体就不说了，因为我也没有用过。具体功能去官方文档查询。</p>
+<p>好了，我现在回到代码，现在我们知道Response是写入内存流，其实剩下的代码大家都知道是什么样的了，我们看下write函数</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">write</span><span class="params">($string)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// <span class="doctag">TODO:</span> Implement write() method.</span></span><br><span class="line">    <span class="keyword">if</span> (!<span class="keyword">$this</span>-&gt;writable) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> \RuntimeException(<span class="string">'Cannot write to a non-writable stream'</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    $result = fwrite(<span class="keyword">$this</span>-&gt;stream, $string);</span><br><span class="line">    <span class="keyword">if</span> ($result === <span class="keyword">false</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> \RuntimeException(<span class="string">'Unable to write to stream'</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> $result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>那么这篇文章就差不多到这结束了</p>
+
+
+    <!-- 显示photos -->
+    
+
+  </div>
+  <div class="post-tags">
+    
+  </div>
+</article>
+  
+    <div class="post-nav">
+      <div class="post-nav-item post-nav-next">
+        
+          <a href="/2019/08/03/如何写一个小型的PHP框架/" rel="next" title="如何写一个小型的PHP框架">
+            <span>〈 </span> 如何写一个小型的PHP框架
+          </a>
+        
+      </div>
+  
+      <div class="post-nav-item post-nav-prev">
+        
+          <a href="/2019/09/07/源码解析-QueryList框架/" rel="prev" title="源码解析-QueryList框架">
+            源码解析-QueryList框架 <span>〉</span>
+          </a>
+        
+      </div>
+    </div>
+  
+
+
+
+    </div>
+
+    
+
+  </div>
+
+  <footer class="footer text-center">
+    <div id="bottom-inner">
+      
+        <a href="http://hexo.io" target="_blank" class="footer-link">Hexo</a>
+      
+        <a href="https://github.com/microacup/hexo-theme-micorb" target="_blank" class="footer-link">Theme microb</a>
+      
+    </div>
+  </footer>
+  
+
+<script>
+  // var titleTime,originTitle=document.title;document.addEventListener("visibilitychange",function(){document.hidden?(document.title="[闷声发大财中...] "+originTitle,clearTimeout(titleTime)):(document.title="[+1s] "+originTitle,titleTime=setTimeout(function(){document.title=originTitle},2e3))});
+</script>
+
+<script>
+  // (function (window, document) {
+  //   window.requestAnimationFrame = (function () {
+  //     return window.requestAnimationFrame ||
+  //       window.webkitRequestAnimationFrame ||
+  //       window.mozRequestAnimationFrame ||
+  //       window.oRequestAnimationFrame ||
+  //       window.msRequestAnimationFrame ||
+  //       function (callback) {
+  //         setTimeout(callback, 1000 / 60);
+  //       }
+  //   })();
+
+  //   function init() {
+  //     addMenuEvent();
+  //   }
+  //   init();
+
+  //   function addMenuEvent() {
+  //     var menu = document.getElementById('menu-main-post');
+  //     if (menu) {
+  //       var toc = document.getElementById('toc');
+  //       menu.title = toc ? '目录' : '回到顶部';
+  //       menu.onclick = function () {
+  //         if (toc) {
+  //           if (toc.style.display == 'block') {
+  //             toc.style.display = 'none';
+  //           } else {
+  //             toc.style.display = 'block';
+  //           }
+  //         } else {
+  //           returnTop();
+  //         }
+  //       };
+  //     }
+  //   }
+
+  //   var timer = null;
+
+  //   function returnTop() {
+  //     cancelAnimationFrame(timer);
+  //     timer = requestAnimationFrame(function fn() {
+  //       var oTop = document.body.scrollTop || document.documentElement.scrollTop;
+  //       if (oTop > 0) {
+  //         document.body.scrollTop = document.documentElement.scrollTop = oTop - 50;
+  //         timer = requestAnimationFrame(fn);
+  //       } else {
+  //         cancelAnimationFrame(timer);
+  //       }
+  //     });
+  //   }
+
+  // })(window, document);
+</script>
+
+
+  
+
+
+
+</body>
+</html>

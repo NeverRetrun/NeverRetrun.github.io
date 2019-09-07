@@ -1,0 +1,211 @@
+
+<!DOCTYPE html>
+<html lang="">
+
+
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="theme-color" content="#202020">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  
+    <meta name="keywords" content>
+  
+
+  
+    <meta name="description" content="源码解析-predis">
+  
+  
+  <link rel="icon" type="image/x-icon" href="/logo.png">
+  <title>源码解析-predis [ Void ]</title>
+  
+    <!-- stylesheets list from config.yml -->
+    
+      <link rel="stylesheet" href="//cdn.bootcss.com/pure/1.0.0/pure-min.css">
+    
+      <link rel="stylesheet" href="/css/microb.css">
+    
+      <link rel="stylesheet" href="/css/iconfont.css">
+    
+  
+</head>
+
+<body>
+  <nav class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
+  <!-- <ul class="pure-menu-list float-r clearfix">
+    
+      <li class="pure-menu-item toc-menu">
+        <a id="menu-main-post" class="pure-menu-link" href="javascript:;">
+          <img class="menu-icon" src="/logo.png" alt="MENU">
+        </a>
+      </li>
+    
+  </ul>   -->
+  <a class="pure-menu-heading" href="/">
+      <h1 class="title">Void</h1>
+      <!-- <span>一个后端程序员</span> -->
+  </a>
+
+  <a href="/about" class="pure-menu-item pure-menu-has-children">
+    <h2 class="subtitle">about</h2>
+  </a>
+
+  <!-- 
+  <img class="logo" id="logo" src="/logo.png" alt="logo">
+   -->
+</nav>
+
+  <div class="container" id="content-outer">
+    <div class="inner" id="content-inner">
+      <article class="post" id="post">
+  <header class="post-header text-center">
+    <h1 class="title">
+      源码解析-predis
+    </h1>
+    
+    <time class="time" datetime="2019-05-12T12:15:52.000Z">
+      2019-05-12
+    </time>
+    
+    <hr>
+  </header>
+  <div class="post-content">
+    <h2 id="源码阅读-predis"><a href="#源码阅读-predis" class="headerlink" title="源码阅读 - predis"></a>源码阅读 - predis</h2><p><br></p>
+<p>阅读任务: </p>
+<ol>
+<li>怎么用PHP代码与redis进行连接</li>
+<li>解析代码结构</li>
+</ol>
+<p><br></p>
+<p>首先先看普通调用代码<br><img src="https://s2.ax1x.com/2019/05/12/Ehx6jf.png" alt="Alt text"></p>
+<p>然后我们继续看下代码的目录结构，最外面只有Client.php 与 一个注册自动加载的类。这里我们直接忽略自动加载的类。<br><img src="https://s2.ax1x.com/2019/05/12/Ehxr9I.png" alt="Alt text"></p>
+<p>打开Client.php 看构造方法 明显$this-&gt;createConnection() 是创建redis连接<br><img src="https://s2.ax1x.com/2019/05/12/Ehxs3t.png" alt="Alt text"></p>
+<p>进入createConnection()方法中 明显我们传入的$parameters是一个数组 进入这段if<br><img src="https://s2.ax1x.com/2019/05/12/Ehx2DS.png" alt="Alt text"></p>
+<p>其中$this-&gt;options-&gt;defined(‘aggregate’) 这里我及其不明白 这样我们回到开头的createOptions()<br>我们追踪代码直到发现 createOption() 实际是new Options(),那么进入Options类<br><img src="https://s2.ax1x.com/2019/05/12/EhxygP.png" alt="Alt text"></p>
+<p>在createConnection() 方法中调用的莫名的参数都来自于 实例化getHandlers中的参数，后面再调用getDefault方法。然后我们回到createConnection()方法中。<br><img src="https://s2.ax1x.com/2019/05/12/EhxfEQ.png" alt="Alt text"></p>
+<p>这里调用一个连接的工厂类 创建连接<br><img src="https://s2.ax1x.com/2019/05/12/Ehxgu8.png" alt="Alt text"></p>
+<p>最后最核心的代码就在这里的类了。</p>
+<p><img src="https://s2.ax1x.com/2019/05/12/EhxRHg.png" alt="Alt text"></p>
+<p>这里我们跟踪完代码，核心StreamConnect类不再赘述。<br>我们完成一下任务一,我们实现一下核心读写代码。</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">writeRequest</span><span class="params">($command, $arguments, $socket)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    $cmdlen = strlen($command);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//这个加1 是加上命令 的个数</span></span><br><span class="line">    $reqlen = count($arguments) + <span class="number">1</span>;</span><br><span class="line">    $buffer = <span class="string">"*&#123;$reqlen&#125;\r\n\$&#123;$cmdlen&#125;\r\n&#123;$command&#125;\r\n"</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">foreach</span> ($arguments <span class="keyword">as</span> $argument) &#123;</span><br><span class="line">        $arglen = strlen($argument);</span><br><span class="line">        $buffer .= <span class="string">"\$&#123;$arglen&#125;\r\n&#123;$argument&#125;\r\n"</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    write($buffer, $socket);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">read</span><span class="params">($socket)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> fgets($socket);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">write</span><span class="params">($buffer, $socket)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">while</span> (($length = strlen($buffer)) &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        $written = @fwrite($socket, $buffer);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> ($length === $written) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> ($written === <span class="keyword">false</span> || $written === <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        $buffer = substr($buffer, $written);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$resource = stream_socket_client(</span><br><span class="line">    <span class="string">'tcp://192.168.31.254:6379'</span>,</span><br><span class="line">    $errno,</span><br><span class="line">    $errmsg,</span><br><span class="line">    <span class="number">5</span>,</span><br><span class="line">    STREAM_CLIENT_CONNECT</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line">writeRequest(<span class="string">'AUTH'</span>, [<span class="string">'password'</span>], $resource);</span><br><span class="line">var_dump(read($resource)); <span class="comment">// return string "OK"</span></span><br></pre></td></tr></table></figure>
+<p>任务二，学习代码结构<br>我现在观摩各种第三方库源码不多，感觉这个库代码质量是很高的，至少比CI3框架 以及各种第三方SDK的代码强多了。<br>首先目录结构是这样的</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">|---bin            //phar打包的命令 自动化创建<span class="built_in">command</span></span><br><span class="line">|</span><br><span class="line">|---examples	   // 各种测试方法</span><br><span class="line">|</span><br><span class="line">|---src			   // 核心代码</span><br><span class="line">|	|</span><br><span class="line">|	|---Client.php // 唯一对外部暴露的类</span><br><span class="line">	|--- ...</span><br></pre></td></tr></table></figure>
+<p>我主要捋了一下，我看到代码部分，代码设计的是很冗余的，好处就是可扩展性极高。<br>先是通过__get() 回调实例化各种参数 构建options<br>然后再用工厂创建连接，最后在通过__call回调命令方法 不过这里的实现并没有配合call_user_func_array这个函数</p>
+<p>总的就是这样吧，这个开源库是很很很很规范的面向接口的实例。<br>代码质量高，但是我没有具体分析 也没有具体想过 代码设计中的优势 或者说是 有没有过度设计</p>
+
+
+    <!-- 显示photos -->
+    
+
+  </div>
+  <div class="post-tags">
+    
+  </div>
+</article>
+  
+    <div class="post-nav">
+      <div class="post-nav-item post-nav-next">
+        
+      </div>
+  
+      <div class="post-nav-item post-nav-prev">
+        
+          <a href="/2019/05/27/PHP-新-特性/" rel="prev" title="PHP&#39;新&#39;特性">
+            PHP&#39;新&#39;特性 <span>〉</span>
+          </a>
+        
+      </div>
+    </div>
+  
+
+
+  <div id="toc" class="toc-article">
+    <strong class="toc-title">目录</strong>
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#源码阅读-predis"><span class="toc-text">源码阅读 - predis</span></a></li></ol>
+  </div>
+
+
+    </div>
+
+    
+
+  </div>
+
+  <footer class="footer text-center">
+    <div id="bottom-inner">
+      
+        <a href="http://hexo.io" target="_blank" class="footer-link">Hexo</a>
+      
+        <a href="https://github.com/microacup/hexo-theme-micorb" target="_blank" class="footer-link">Theme microb</a>
+      
+    </div>
+  </footer>
+  
+
+<script>
+  // var titleTime,originTitle=document.title;document.addEventListener("visibilitychange",function(){document.hidden?(document.title="[闷声发大财中...] "+originTitle,clearTimeout(titleTime)):(document.title="[+1s] "+originTitle,titleTime=setTimeout(function(){document.title=originTitle},2e3))});
+</script>
+
+<script>
+  // (function (window, document) {
+  //   window.requestAnimationFrame = (function () {
+  //     return window.requestAnimationFrame ||
+  //       window.webkitRequestAnimationFrame ||
+  //       window.mozRequestAnimationFrame ||
+  //       window.oRequestAnimationFrame ||
+  //       window.msRequestAnimationFrame ||
+  //       function (callback) {
+  //         setTimeout(callback, 1000 / 60);
+  //       }
+  //   })();
+
+  //   function init() {
+  //     addMenuEvent();
+  //   }
+  //   init();
+
+  //   function addMenuEvent() {
+  //     var menu = document.getElementById('menu-main-post');
+  //     if (menu) {
+  //       var toc = document.getElementById('toc');
+  //       menu.title = toc ? '目录' : '回到顶部';
+  //       menu.onclick = function () {
+  //         if (toc) {
+  //           if (toc.style.display == 'block') {
+  //             toc.style.display = 'none';
+  //           } else {
+  //             toc.style.display = 'block';
+  //           }
+  //         } else {
+  //           returnTop();
+  //         }
+  //       };
+  //     }
+  //   }
+
+  //   var timer = null;
+
+  //   function returnTop() {
+  //     cancelAnimationFrame(timer);
+  //     timer = requestAnimationFrame(function fn() {
+  //       var oTop = document.body.scrollTop || document.documentElement.scrollTop;
+  //       if (oTop > 0) {
+  //         document.body.scrollTop = document.documentElement.scrollTop = oTop - 50;
+  //         timer = requestAnimationFrame(fn);
+  //       } else {
+  //         cancelAnimationFrame(timer);
+  //       }
+  //     });
+  //   }
+
+  // })(window, document);
+</script>
+
+
+  
+
+
+
+</body>
+</html>

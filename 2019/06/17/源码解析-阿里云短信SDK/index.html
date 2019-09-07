@@ -1,0 +1,221 @@
+
+<!DOCTYPE html>
+<html lang="">
+
+
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="theme-color" content="#202020">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  
+    <meta name="keywords" content>
+  
+
+  
+    <meta name="description" content="源码解析-阿里云短信SDK">
+  
+  
+  <link rel="icon" type="image/x-icon" href="/logo.png">
+  <title>源码解析-阿里云短信SDK [ Void ]</title>
+  
+    <!-- stylesheets list from config.yml -->
+    
+      <link rel="stylesheet" href="//cdn.bootcss.com/pure/1.0.0/pure-min.css">
+    
+      <link rel="stylesheet" href="/css/microb.css">
+    
+      <link rel="stylesheet" href="/css/iconfont.css">
+    
+  
+</head>
+
+<body>
+  <nav class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
+  <!-- <ul class="pure-menu-list float-r clearfix">
+    
+      <li class="pure-menu-item toc-menu">
+        <a id="menu-main-post" class="pure-menu-link" href="javascript:;">
+          <img class="menu-icon" src="/logo.png" alt="MENU">
+        </a>
+      </li>
+    
+  </ul>   -->
+  <a class="pure-menu-heading" href="/">
+      <h1 class="title">Void</h1>
+      <!-- <span>一个后端程序员</span> -->
+  </a>
+
+  <a href="/about" class="pure-menu-item pure-menu-has-children">
+    <h2 class="subtitle">about</h2>
+  </a>
+
+  <!-- 
+  <img class="logo" id="logo" src="/logo.png" alt="logo">
+   -->
+</nav>
+
+  <div class="container" id="content-outer">
+    <div class="inner" id="content-inner">
+      <article class="post" id="post">
+  <header class="post-header text-center">
+    <h1 class="title">
+      源码解析-阿里云短信SDK
+    </h1>
+    
+    <time class="time" datetime="2019-06-17T12:37:30.000Z">
+      2019-06-17
+    </time>
+    
+    <hr>
+  </header>
+  <div class="post-content">
+    <h2 id="源码解析-阿里云短信SDK"><a href="#源码解析-阿里云短信SDK" class="headerlink" title="源码解析 阿里云短信SDK"></a>源码解析 阿里云短信SDK</h2><p>阅读任务: </p>
+<pre><code>1.  整理出单独短信API
+</code></pre><blockquote>
+<p>ps: 这代码告诉我 什么才是OOP， 太强了<br>(题外: 后面会尽量不截图 免费图床加载图片有点慢)</p>
+</blockquote>
+<p>首先我们先看调用接口的代码</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">require_once</span> <span class="string">'./vendor/autoload.php'</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">use</span> <span class="title">AlibabaCloud</span>\<span class="title">Client</span>\<span class="title">AlibabaCloud</span>;</span><br><span class="line"><span class="keyword">use</span> <span class="title">AlibabaCloud</span>\<span class="title">Client</span>\<span class="title">Exception</span>\<span class="title">ClientException</span>;</span><br><span class="line"><span class="keyword">use</span> <span class="title">AlibabaCloud</span>\<span class="title">Client</span>\<span class="title">Exception</span>\<span class="title">ServerException</span>;</span><br><span class="line"></span><br><span class="line">AlibabaCloud::accessKeyClient($accessKeyId, $accessKeySrcect)</span><br><span class="line">    -&gt;regionId(<span class="string">'cn-hangzhou'</span>)</span><br><span class="line">    -&gt;asDefaultClient();</span><br><span class="line"></span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    $result = AlibabaCloud::rpc()</span><br><span class="line">        -&gt;product(<span class="string">'Dysmsapi'</span>)</span><br><span class="line">        <span class="comment">// -&gt;scheme('https') // https | http</span></span><br><span class="line">        -&gt;version(<span class="string">'2017-05-25'</span>)</span><br><span class="line">        -&gt;action(<span class="string">'SendSms'</span>)</span><br><span class="line">        -&gt;method(<span class="string">'POST'</span>)</span><br><span class="line">        -&gt;options([</span><br><span class="line">            <span class="string">'query'</span> =&gt; [</span><br><span class="line">                <span class="string">'RegionId'</span> =&gt; <span class="string">"cn-hangzhou"</span>,</span><br><span class="line">                <span class="string">'TemplateParam'</span> =&gt; Code::create(),</span><br><span class="line">                <span class="string">'TemplateCode'</span> =&gt; $templateId,</span><br><span class="line">                <span class="string">'SignName'</span> =&gt; $signName,</span><br><span class="line">                <span class="string">'PhoneNumbers'</span> =&gt; $mobile,</span><br><span class="line">            ],</span><br><span class="line">        ])</span><br><span class="line">        -&gt;request();</span><br><span class="line">    var_dump($result);</span><br><span class="line">    var_dump($result-&gt;toArray());</span><br><span class="line">&#125; <span class="keyword">catch</span> (ClientException $e) &#123;</span><br><span class="line">    <span class="keyword">echo</span> $e-&gt;getErrorMessage() . PHP_EOL;</span><br><span class="line">&#125; <span class="keyword">catch</span> (ServerException $e) &#123;</span><br><span class="line">    <span class="keyword">echo</span> $e-&gt;getErrorMessage() . PHP_EOL;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以发现这里都是调用AlibabaCloud类的静态方法，我们进入AlibabaCloud类。<br>AlibabaCloud类很简洁，只有一个魔术方法__callStatic 通过它来调用不存在的静态方法，我一开始以为是这样来调用上面的rpc() 与 accessKeyClient() 的。后来我发现错了。</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">AlibabaCloud</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">use</span> <span class="title">ClientTrait</span>;</span><br><span class="line">    <span class="keyword">use</span> <span class="title">DefaultRegionTrait</span>;</span><br><span class="line">    <span class="keyword">use</span> <span class="title">EndpointTrait</span>;</span><br><span class="line">    <span class="keyword">use</span> <span class="title">RequestTrait</span>;</span><br><span class="line">    <span class="keyword">use</span> <span class="title">MockTrait</span>;</span><br><span class="line">    <span class="keyword">use</span> <span class="title">HistoryTrait</span>;</span><br><span class="line">    <span class="keyword">use</span> <span class="title">LogTrait</span>;</span><br></pre></td></tr></table></figure>
+<p>在AlibabaCloud类中调用了一系列的Trait ，我很少见到有人用Trait，这次能好好学一下这个特性了。我们进入ClientTrait中。我们先前调用的accessKeyClient() 就在其中<br><figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="function"><span class="keyword">function</span> <span class="title">accessKeyClient</span><span class="params">($accessKeyId, $accessKeySecret)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> AccessKeyClient($accessKeyId, $accessKeySecret);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>我们进入AccessKeyClient类中发现这样的代码，这里是传入一个AccessKeyCredential类与ShaHmac1Signature类。<br><figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">($accessKeyId, $accessKeySecret)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">parent</span>::__construct(</span><br><span class="line">        <span class="keyword">new</span> AccessKeyCredential($accessKeyId, $accessKeySecret),</span><br><span class="line">        <span class="keyword">new</span> ShaHmac1Signature()</span><br><span class="line">    );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>Client父类里面的__construct方法是这样的<br><figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">(CredentialsInterface $credential, SignatureInterface $signature)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">$this</span>-&gt;credential                 = $credential;</span><br><span class="line">    <span class="keyword">$this</span>-&gt;signature                  = $signature;</span><br><span class="line">    <span class="keyword">$this</span>-&gt;options[<span class="string">'connect_timeout'</span>] = Request::CONNECT_TIMEOUT;</span><br><span class="line">    <span class="keyword">$this</span>-&gt;options[<span class="string">'timeout'</span>]         = Request::TIMEOUT;</span><br><span class="line">    <span class="keyword">$this</span>-&gt;options[<span class="string">'verify'</span>]          = <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>我随后进入了AccessKeyCredential 与 ShaHmac1Signature ，它们都是实体类。在ShaHmac1Signature类中获得签名方法<br><figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">sign</span><span class="params">($string, $accessKeySecret)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> base64_encode(hash_hmac(<span class="string">'sha1'</span>, $string, $accessKeySecret, <span class="keyword">true</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>然后我们接着进入regionId() 这个方法。它是在RegionTrait 中，而且只有一个regionId()方法 和 regionId。既然这里的RegionTrait作用很明显，是当一个实体类插入的。 trait的作用凸显了，组合。<br><figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">regionId</span><span class="params">($regionId)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    ClientFilter::regionId($regionId);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">$this</span>-&gt;regionId = $regionId;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">$this</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>接着第一次调用最后一个方法asDefaultClient()<br><figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">asDefaultClient</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">$this</span>-&gt;name(CredentialsProvider::getDefaultName());</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">name</span><span class="params">($name)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    Filter::name($name);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> AlibabaCloud::set($name, <span class="keyword">$this</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>这里的set 跳回到ClientTrait中，我们看到很明显 这里是维护一个全局对象数组，最后将对象存进这个数组。<br><figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">trait</span> ClientTrait</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">static</span> $clients = [];</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="function"><span class="keyword">function</span> <span class="title">set</span><span class="params">($clientName, Client $client)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        ClientFilter::clientName($clientName);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">self</span>::$clients[\strtolower($clientName)] = $client;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure></p>
+<p>那么，我们可以总结这里Trait的作用了，他用组合的方式实现了类似建造者这种设计模式，最后生成的Client对象进入全局数组。下面是前面整理出来的关系图</p>
+<p><img src="https://s2.ax1x.com/2019/06/17/VbuIGn.png" alt="阿里SDK流程图"></p>
+<p>下面是rpc()这个方法， rpc()中是这样的<br><figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="function"><span class="keyword">function</span> <span class="title">rpc</span><span class="params">(array $options = [])</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> RpcRequest($options);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>进入RpcRequst发现没有构造函数，进入父类Request类，果然是初始化请求的一些参数<br><figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">(array $options = [])</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">$this</span>-&gt;client                     = CredentialsProvider::getDefaultName();</span><br><span class="line">    <span class="keyword">$this</span>-&gt;uri                        = <span class="keyword">new</span> Uri();</span><br><span class="line">    <span class="keyword">$this</span>-&gt;uri                        = <span class="keyword">$this</span>-&gt;uri-&gt;withScheme(<span class="keyword">$this</span>-&gt;scheme);</span><br><span class="line">    <span class="keyword">$this</span>-&gt;options[<span class="string">'http_errors'</span>]     = <span class="keyword">false</span>;</span><br><span class="line">    <span class="keyword">$this</span>-&gt;options[<span class="string">'connect_timeout'</span>] = <span class="keyword">self</span>::CONNECT_TIMEOUT;</span><br><span class="line">    <span class="keyword">$this</span>-&gt;options[<span class="string">'timeout'</span>]         = <span class="keyword">self</span>::TIMEOUT;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Turn on debug mode based on environment variable.</span></span><br><span class="line">    <span class="keyword">if</span> (strtolower(\AlibabaCloud\Client\env(<span class="string">'DEBUG'</span>)) === <span class="string">'sdk'</span>) &#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;options[<span class="string">'debug'</span>] = <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Rewrite configuration if the user has a configuration.</span></span><br><span class="line">    <span class="keyword">if</span> ($options !== []) &#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;options($options);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>接着 product() version() action() method() options()方法都与下面这个类似，都是给$this类添加相应属性<br><figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">product</span><span class="params">($product)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    ApiFilter::product($product);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">$this</span>-&gt;product = $product;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">$this</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>我们最后进入request() 方法<br><figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">request</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">$this</span>-&gt;resolveOption();</span><br><span class="line">    $result = <span class="keyword">$this</span>-&gt;response();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">$this</span>-&gt;shouldServerRetry($result)) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">$this</span>-&gt;request();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!$result-&gt;isSuccess()) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> ServerException($result);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> $result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>很明显，显然我们需要的参数都应该在第一个resolveOption() 方法中，进入resolveOption()方法中<br><figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">resolveOption</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">$this</span>-&gt;options[<span class="string">'headers'</span>][<span class="string">'User-Agent'</span>] = UserAgent::toString(<span class="keyword">$this</span>-&gt;userAgent);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">$this</span>-&gt;cleanQuery();</span><br><span class="line">    <span class="keyword">$this</span>-&gt;cleanFormParams();</span><br><span class="line">    <span class="keyword">$this</span>-&gt;resolveHost();</span><br><span class="line">    <span class="keyword">$this</span>-&gt;resolveParameter();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">isset</span>(<span class="keyword">$this</span>-&gt;options[<span class="string">'form_params'</span>])) &#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;options[<span class="string">'form_params'</span>] = \GuzzleHttp\Psr7\parse_query(</span><br><span class="line">            Encode::create(<span class="keyword">$this</span>-&gt;options[<span class="string">'form_params'</span>])-&gt;toString()</span><br><span class="line">        );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">$this</span>-&gt;mergeOptionsIntoClient();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>这里我看了CleanQuery() 与 CleanFormParams() 方法 均是处理空数据的时候 unset。resolveHost() 方法也是取出Config类中，将host设为dysmsapi.aliyuncs.com。最后一个resovleParameter() 在子类中实现，我们看这个方法，我们所需要的参数基本都在这里了<br><figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="function"><span class="keyword">function</span> <span class="title">resolveCommonParameters</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    $signature                                  = <span class="keyword">$this</span>-&gt;httpClient()-&gt;getSignature();</span><br><span class="line">    <span class="keyword">$this</span>-&gt;options[<span class="string">'query'</span>][<span class="string">'RegionId'</span>]         = <span class="keyword">$this</span>-&gt;realRegionId();</span><br><span class="line">    <span class="keyword">$this</span>-&gt;options[<span class="string">'query'</span>][<span class="string">'Format'</span>]           = <span class="keyword">$this</span>-&gt;format;</span><br><span class="line">    <span class="keyword">$this</span>-&gt;options[<span class="string">'query'</span>][<span class="string">'SignatureMethod'</span>]  = $signature-&gt;getMethod();</span><br><span class="line">    <span class="keyword">$this</span>-&gt;options[<span class="string">'query'</span>][<span class="string">'SignatureVersion'</span>] = $signature-&gt;getVersion();</span><br><span class="line">    <span class="keyword">$this</span>-&gt;options[<span class="string">'query'</span>][<span class="string">'SignatureNonce'</span>]   = Sign::uuid(<span class="keyword">$this</span>-&gt;product . <span class="keyword">$this</span>-&gt;realRegionId());</span><br><span class="line">    <span class="keyword">$this</span>-&gt;options[<span class="string">'query'</span>][<span class="string">'Timestamp'</span>]        = gmdate(<span class="keyword">$this</span>-&gt;dateTimeFormat);</span><br><span class="line">    <span class="keyword">$this</span>-&gt;options[<span class="string">'query'</span>][<span class="string">'Action'</span>]           = <span class="keyword">$this</span>-&gt;action;</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">$this</span>-&gt;credential()-&gt;getAccessKeyId()) &#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;options[<span class="string">'query'</span>][<span class="string">'AccessKeyId'</span>] = <span class="keyword">$this</span>-&gt;credential()-&gt;getAccessKeyId();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> ($signature-&gt;getType()) &#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;options[<span class="string">'query'</span>][<span class="string">'SignatureType'</span>] = $signature-&gt;getType();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (!<span class="keyword">isset</span>(<span class="keyword">$this</span>-&gt;options[<span class="string">'query'</span>][<span class="string">'Version'</span>])) &#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;options[<span class="string">'query'</span>][<span class="string">'Version'</span>] = <span class="keyword">$this</span>-&gt;version;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">$this</span>-&gt;resolveSecurityToken();</span><br><span class="line">    <span class="keyword">$this</span>-&gt;resolveBearerToken();</span><br><span class="line">    <span class="keyword">$this</span>-&gt;options[<span class="string">'query'</span>][<span class="string">'Signature'</span>] = <span class="keyword">$this</span>-&gt;signature();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>不过剩下中间最后的response()方法我没怎么看懂，后面可能要看下Guzzle这个组件库 还挺好奇它是怎么异步发起请求的。</p>
+<p>最后我已经完成自己整理出来的单独的类了。就不贴丑陋的代码了，上面代码拼凑一下基本都全了。这里着重学习一下阿里SDK中Trait的运用。虽然没有这么变态的规划项目的能力，但是有些小技巧可以学比如说下面这个Trait<br><figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">trait</span> ArrayAccessTrait</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> &amp; <span class="title">offsetGet</span><span class="params">($offset)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">isset</span>(<span class="keyword">$this</span>-&gt;data[$offset])) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">$this</span>-&gt;data[$offset];</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        $value = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> $value;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">offsetSet</span><span class="params">($offset, $value)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;data[$offset] = $value;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">offsetExists</span><span class="params">($offset)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">isset</span>(<span class="keyword">$this</span>-&gt;data[$offset]);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">offsetUnset</span><span class="params">($offset)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">unset</span>(<span class="keyword">$this</span>-&gt;data[$offset]);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>利用Trait的性质快速实现PHP提供的接口类似ArrayAccess Countable IteratorAggregate。</p>
+<p>最后，这明显算一个项目了，而且代码质量贼高。对于我而言，高于我好几个Level，这种Trait构造对象可以说是第一次见，愈发对一线大厂敬仰，最后加油。</p>
+
+
+    <!-- 显示photos -->
+    
+
+  </div>
+  <div class="post-tags">
+    
+  </div>
+</article>
+  
+    <div class="post-nav">
+      <div class="post-nav-item post-nav-next">
+        
+          <a href="/2019/05/27/PHP-新-特性/" rel="next" title="PHP&#39;新&#39;特性">
+            <span>〈 </span> PHP&#39;新&#39;特性
+          </a>
+        
+      </div>
+  
+      <div class="post-nav-item post-nav-prev">
+        
+          <a href="/2019/06/23/PHP-SPL库/" rel="prev" title="PHP-SPL库">
+            PHP-SPL库 <span>〉</span>
+          </a>
+        
+      </div>
+    </div>
+  
+
+
+  <div id="toc" class="toc-article">
+    <strong class="toc-title">目录</strong>
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#源码解析-阿里云短信SDK"><span class="toc-text">源码解析 阿里云短信SDK</span></a></li></ol>
+  </div>
+
+
+    </div>
+
+    
+
+  </div>
+
+  <footer class="footer text-center">
+    <div id="bottom-inner">
+      
+        <a href="http://hexo.io" target="_blank" class="footer-link">Hexo</a>
+      
+        <a href="https://github.com/microacup/hexo-theme-micorb" target="_blank" class="footer-link">Theme microb</a>
+      
+    </div>
+  </footer>
+  
+
+<script>
+  // var titleTime,originTitle=document.title;document.addEventListener("visibilitychange",function(){document.hidden?(document.title="[闷声发大财中...] "+originTitle,clearTimeout(titleTime)):(document.title="[+1s] "+originTitle,titleTime=setTimeout(function(){document.title=originTitle},2e3))});
+</script>
+
+<script>
+  // (function (window, document) {
+  //   window.requestAnimationFrame = (function () {
+  //     return window.requestAnimationFrame ||
+  //       window.webkitRequestAnimationFrame ||
+  //       window.mozRequestAnimationFrame ||
+  //       window.oRequestAnimationFrame ||
+  //       window.msRequestAnimationFrame ||
+  //       function (callback) {
+  //         setTimeout(callback, 1000 / 60);
+  //       }
+  //   })();
+
+  //   function init() {
+  //     addMenuEvent();
+  //   }
+  //   init();
+
+  //   function addMenuEvent() {
+  //     var menu = document.getElementById('menu-main-post');
+  //     if (menu) {
+  //       var toc = document.getElementById('toc');
+  //       menu.title = toc ? '目录' : '回到顶部';
+  //       menu.onclick = function () {
+  //         if (toc) {
+  //           if (toc.style.display == 'block') {
+  //             toc.style.display = 'none';
+  //           } else {
+  //             toc.style.display = 'block';
+  //           }
+  //         } else {
+  //           returnTop();
+  //         }
+  //       };
+  //     }
+  //   }
+
+  //   var timer = null;
+
+  //   function returnTop() {
+  //     cancelAnimationFrame(timer);
+  //     timer = requestAnimationFrame(function fn() {
+  //       var oTop = document.body.scrollTop || document.documentElement.scrollTop;
+  //       if (oTop > 0) {
+  //         document.body.scrollTop = document.documentElement.scrollTop = oTop - 50;
+  //         timer = requestAnimationFrame(fn);
+  //       } else {
+  //         cancelAnimationFrame(timer);
+  //       }
+  //     });
+  //   }
+
+  // })(window, document);
+</script>
+
+
+  
+
+
+
+</body>
+</html>

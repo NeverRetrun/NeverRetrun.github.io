@@ -1,0 +1,241 @@
+
+<!DOCTYPE html>
+<html lang="">
+
+
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="theme-color" content="#202020">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  
+    <meta name="keywords" content>
+  
+
+  
+    <meta name="description" content="如何写一个小型的PHP框架">
+  
+  
+  <link rel="icon" type="image/x-icon" href="/logo.png">
+  <title>如何写一个小型的PHP框架 [ Void ]</title>
+  
+    <!-- stylesheets list from config.yml -->
+    
+      <link rel="stylesheet" href="//cdn.bootcss.com/pure/1.0.0/pure-min.css">
+    
+      <link rel="stylesheet" href="/css/microb.css">
+    
+      <link rel="stylesheet" href="/css/iconfont.css">
+    
+  
+</head>
+
+<body>
+  <nav class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
+  <!-- <ul class="pure-menu-list float-r clearfix">
+    
+      <li class="pure-menu-item toc-menu">
+        <a id="menu-main-post" class="pure-menu-link" href="javascript:;">
+          <img class="menu-icon" src="/logo.png" alt="MENU">
+        </a>
+      </li>
+    
+  </ul>   -->
+  <a class="pure-menu-heading" href="/">
+      <h1 class="title">Void</h1>
+      <!-- <span>一个后端程序员</span> -->
+  </a>
+
+  <a href="/about" class="pure-menu-item pure-menu-has-children">
+    <h2 class="subtitle">about</h2>
+  </a>
+
+  <!-- 
+  <img class="logo" id="logo" src="/logo.png" alt="logo">
+   -->
+</nav>
+
+  <div class="container" id="content-outer">
+    <div class="inner" id="content-inner">
+      <article class="post" id="post">
+  <header class="post-header text-center">
+    <h1 class="title">
+      如何写一个小型的PHP框架
+    </h1>
+    
+    <time class="time" datetime="2019-08-03T08:59:21.000Z">
+      2019-08-03
+    </time>
+    
+    <hr>
+  </header>
+  <div class="post-content">
+    <p>如何写一个小型PHP框架</p>
+<hr>
+<p>许多PHPer对于PHP框架没有一个大概的认识，这里我大概写一下一个小型的php-fpm的框架是什么样的</p>
+<p>首先，PHP框架有多入口的与单入口的。我目前看到一个PHP5.4的官网项目是用多入口的，现在大部分的PHP框架都是单入口的，在路由上他们的区别应该是这样的</p>
+<blockquote>
+<p>多入口 ： xxx.com/admin/index.php/login<br>单入口 ： xxx.com/index.php/admin/login</p>
+</blockquote>
+<p>我认为单入口很好的原因是这样的： 多入口可能需要把单入口复用的代码 复制多份，而单入口只用一份完整依赖的代码。</p>
+<p>OK 我们先用比较原始的代码写一个后台接口</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="comment">//index.php</span></span><br><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">responseJson</span><span class="params">(int $code, array $data, string $msg)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> json_encode(compact(<span class="string">'code'</span>, <span class="string">'data'</span>, <span class="string">'msg'</span>));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">echo</span> responseJson(<span class="number">200</span>, [], <span class="string">'hello world!'</span>);</span><br><span class="line"><span class="comment">//&#123;"code":200,"data":[],"msg":"hello world!"&#125;</span></span><br></pre></td></tr></table></figure>
+<p>这样我们用一个index.php完成了一个输出”hello world”的api接口。而框架中一般是有Controller、Model这种层级的。那我们简单的分个层。</p>
+<p>现在我们项目结构大概是这样的</p>
+<blockquote>
+<p>|–Controller<br>|—-Hello.php<br>|–index.php</p>
+</blockquote>
+<p>在Hello.php中 我们完善了一个say方法大概是这样的</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Hello</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">say</span><span class="params">()</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> responseJson(<span class="number">200</span>, [], <span class="string">'hello world!'</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>本质上我们是将逻辑转移到了Controller中，那我们把问题转移成：<strong>怎么通过index.php来访问到Hello.php的say方法呢</strong></p>
+<p>这里引入了一个东西叫路由。也就是我们通常在框架中访问的地址，这里我们举例一种按路径来访问，比如说</p>
+<blockquote>
+<p>xxx.com/index.php/admin/login/login  访问的就是 admin文件夹中的 login类 的 login方法</p>
+</blockquote>
+<p>那我们就需要在代码中写出 根据访问的url，去实例化某个类，再去执行某个方法类似于下面这样的</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="comment">// 访问xxx.com/index.php/Test/test 就需要完成这样的操作</span></span><br><span class="line">$result = (<span class="keyword">new</span> Test())-&gt;test();</span><br><span class="line"><span class="keyword">echo</span> $result; <span class="comment">//输出结果</span></span><br></pre></td></tr></table></figure>
+<p>当然在这里，我们需要注意的是命名空间。如果不知道的话，去查阅 <a href="https://www.php.net/manual/zh/language.namespaces.basics.php" target="_blank" rel="noopener">PHP官方文档</a><br>我们这里就不重复造轮子了，直接引入composer的自动加载。如果现在你还不了解Composer的话，那你真的得需要去看下了<a href="https://docs.phpcomposer.com/" target="_blank" rel="noopener">Composer文档</a></p>
+<p>这里我在composer.json添加上需要自动加载的目录</p>
+<figure class="highlight"><table><tr><td class="code"><pre><span class="line">"autoload": &#123;</span><br><span class="line">    "psr-4": &#123;</span><br><span class="line">        "Controller\\": "Controller/",</span><br><span class="line">        "Util\\": "Util/"</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后再执行 <strong>composer dump-autoload</strong>，重新加载自动加载文件。</p>
+<p>到这里我们已经完成所需的外部依赖了。剩下的只用我们丰富代码，实际上的思路就是将URL转义成代码中的实例化类并执行方法。下面是我实现的index.php文件</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="comment">//index.php</span></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">parseUrl</span><span class="params">(string $url)</span>: <span class="title">array</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    $position = strstr($url, <span class="string">'index.php'</span>, <span class="keyword">false</span>);</span><br><span class="line">    $position = trim($position, <span class="string">'/'</span>);</span><br><span class="line"></span><br><span class="line">    $parsed = explode(<span class="string">'/'</span>, $position);</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">empty</span>($parsed)) &#123;</span><br><span class="line">        <span class="keyword">return</span> [];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    $pointer = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span> ($parsed[<span class="number">0</span>] == <span class="string">'index.php'</span>) &#123;</span><br><span class="line">        <span class="keyword">unset</span>($parsed[<span class="number">0</span>]);</span><br><span class="line">        $pointer = <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    $checked = count($parsed);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">switch</span> ($checked) &#123;</span><br><span class="line">        <span class="keyword">case</span> <span class="number">2</span>:</span><br><span class="line">            $controller = $parsed[$pointer];</span><br><span class="line">            $action = $parsed[$pointer + <span class="number">1</span>];</span><br><span class="line">            <span class="keyword">return</span> [</span><br><span class="line">                <span class="string">'class'</span> =&gt; <span class="string">'Controller\\'</span> . ucfirst($controller),</span><br><span class="line">                <span class="string">'action'</span> =&gt; $action</span><br><span class="line">            ];</span><br><span class="line">        <span class="keyword">case</span> <span class="number">3</span>:</span><br><span class="line"></span><br><span class="line">            $document = $parsed[$pointer];</span><br><span class="line">            $controller = $parsed[$pointer++];</span><br><span class="line">            $action = $parsed[$pointer++];</span><br><span class="line">            <span class="keyword">return</span> [</span><br><span class="line">                <span class="string">'class'</span> =&gt; <span class="string">'Controller\\'</span> . ucfirst($document) . <span class="string">'\\'</span> . ucfirst($controller),</span><br><span class="line">                <span class="string">'action'</span> =&gt; $action</span><br><span class="line">            ];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> [];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">dump</span><span class="params">($data)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">echo</span> <span class="string">'&lt;pre/&gt;'</span>;</span><br><span class="line">    var_dump($data);</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">require_once</span> <span class="string">"./vendor/autoload.php"</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (!<span class="keyword">isset</span>($_SERVER[<span class="string">'REQUEST_URI'</span>])) &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="keyword">Exception</span>(<span class="string">"REQUEST_URI项不存在"</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$reflectionData = parseUrl($_SERVER[<span class="string">'REQUEST_URI'</span>]);</span><br><span class="line"><span class="keyword">if</span> (<span class="keyword">empty</span>($reflectionData)) &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="keyword">Exception</span>(<span class="string">"解析路由错误"</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">$class = <span class="keyword">new</span> $reflectionData[<span class="string">'class'</span>];</span><br><span class="line">$return = call_user_func([$class, $reflectionData[<span class="string">'action'</span>]]);</span><br><span class="line"></span><br><span class="line"><span class="keyword">echo</span> $return;</span><br></pre></td></tr></table></figure>
+<p>我们将responseJson方法抽离出来，写到Response类中</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="comment">//Response.php</span></span><br><span class="line"><span class="keyword">namespace</span> <span class="title">Util</span>;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Response</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">const</span> STATUS_OK = <span class="number">200</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">success</span><span class="params">($data)</span>: <span class="title">string</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> json_encode([</span><br><span class="line">            <span class="string">'code'</span> =&gt; <span class="keyword">self</span>::STATUS_OK,</span><br><span class="line">            <span class="string">'data'</span> =&gt; $data,</span><br><span class="line">            <span class="string">'msg'</span> =&gt; <span class="string">'SUCCESS'</span></span><br><span class="line">        ]);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> <span class="title">Controller</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">use</span> <span class="title">Util</span>\<span class="title">Response</span>;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Hello</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">say</span><span class="params">()</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> (<span class="keyword">new</span> Response())-&gt;success(<span class="string">"hello world"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>那么我们访问 xxx.com/index.php/hello/say 就可以得到：</p>
+<blockquote>
+<p>{“code”:200,”data”:”hello world”,”msg”:”SUCCESS”}</p>
+</blockquote>
+<p>这样一个小型框架的主要部分就完成了。主要思路是一个对路由的调度。可能很多人说框架明明还有很多功能 类似 日志，错误处理，ORM之类的。</p>
+<p>错误处理主要依靠PHP中的函数，自定义错误处理</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">set_error_handler();</span><br><span class="line">set_exception_handler();</span><br><span class="line">register_shutdown_function();</span><br></pre></td></tr></table></figure>
+<p>而ORM，日志，容器等等的功能，其实很多人已经完成了，我们可以依靠composer将他们的组件添加到自己的项目来。就像是拼接一个积木玩具一样，完成一个完整的项目。 Over</p>
+<p>认识框架，我认为是一道坎。认识了框架怎么写的，你才能知道自己写的代码第一步是怎么运转的。我感觉程序员在学习的道路上就像是在学习自己的代码到底是怎么在计算机上跑起来的，这中间到底做了什么。</p>
+<hr>
+<p>实际上，上面我们只是拼凑出一个很简易的路由功能。我们完全可以使用Composer引入别人写好的路由组件。现在我们引入<a href="https://github.com/nikic/FastRoute" target="_blank" rel="noopener"><strong>FastRoute</strong></a>这个路由组件。现代PHP框架大部分路由都是采用该路由组件的思路去实现自己的路由。</p>
+<p>在github上FastRoute有一个简单的Demo，我们直接按它的demo去实现路由匹配。那我们将他的demo稍微封装一下，让代码变得好看一点。</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//Route/Engine.php</span></span><br><span class="line"><span class="keyword">namespace</span> <span class="title">Route</span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">use</span> <span class="title">Response</span>\<span class="title">Factory</span>;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Engine</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="function"><span class="keyword">function</span> <span class="title">run</span><span class="params">()</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        $dispatcher = \FastRoute\simpleDispatcher(<span class="function"><span class="keyword">function</span><span class="params">(\FastRoute\RouteCollector $r)</span> </span>&#123;</span><br><span class="line">            $r = Config::init($r);</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line">        $httpMethod = $_SERVER[<span class="string">'REQUEST_METHOD'</span>];</span><br><span class="line">        $uri = $_SERVER[<span class="string">'REQUEST_URI'</span>];</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">false</span> !== $pos = strpos($uri, <span class="string">'?'</span>)) &#123;</span><br><span class="line">            $uri = substr($uri, <span class="number">0</span>, $pos);</span><br><span class="line">        &#125;</span><br><span class="line">        $uri = rawurldecode($uri);</span><br><span class="line">        $routeInfo = $dispatcher-&gt;dispatch($httpMethod, $uri);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        <span class="keyword">switch</span> ($routeInfo[<span class="number">0</span>]) &#123;</span><br><span class="line">            <span class="keyword">case</span> \FastRoute\Dispatcher::NOT_FOUND:</span><br><span class="line">                $response = Factory::create(Factory::NOT_FOUND_404);</span><br><span class="line">                <span class="keyword">return</span> $response-&gt;output();</span><br><span class="line"></span><br><span class="line">            <span class="keyword">case</span> \FastRoute\Dispatcher::METHOD_NOT_ALLOWED:</span><br><span class="line">                $response = Factory::create(Factory::NOT_FOUND_404);</span><br><span class="line">                <span class="keyword">return</span> $response-&gt;output();</span><br><span class="line"></span><br><span class="line">            <span class="keyword">case</span> \FastRoute\Dispatcher::FOUND:</span><br><span class="line">                $handler = $routeInfo[<span class="number">1</span>];</span><br><span class="line">                $vars = $routeInfo[<span class="number">2</span>];</span><br><span class="line"></span><br><span class="line">                $parsed = <span class="keyword">new</span> Parse($handler);</span><br><span class="line"></span><br><span class="line">                $className = $parsed-&gt;getClass();</span><br><span class="line">                $class = <span class="keyword">new</span> $className;</span><br><span class="line">                <span class="keyword">return</span> call_user_func_array([$class, $parsed-&gt;getAction()], $vars);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后把路由藏进Config.php中</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> <span class="title">Route</span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">use</span> <span class="title">FastRoute</span>\<span class="title">RouteCollector</span>;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Config</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="function"><span class="keyword">function</span> <span class="title">init</span><span class="params">(RouteCollector $route)</span>: <span class="title">RouteCollector</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        $route-&gt;addRoute(<span class="string">'GET'</span>, <span class="string">'/test-framework/index.php/users'</span>, <span class="string">'/Controller/Hello/say'</span>);</span><br><span class="line">        <span class="keyword">return</span> $route;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在Engine.php中有个Parse.php的类，这中间就是解析了一下命名空间。可以自行实现。然后index.php中就可以很简单的写成这样</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">require_once</span> <span class="string">"./vendor/autoload.php"</span>;</span><br><span class="line"></span><br><span class="line">$result = Route\Engine::run();</span><br><span class="line"><span class="keyword">echo</span> $result;</span><br></pre></td></tr></table></figure>
+<p>最后我们的代码目录大概是这样的</p>
+<p><img src="https://i.loli.net/2019/08/03/WzUjAyX4rB3Lfvm.png" alt="项目目录"></p>
+<p>我实现的demo： <a href="https://github.com/NeverRetrun/test-framework-demo" target="_blank" rel="noopener">github</a><br>这里仅仅也只是实现了一个路由功能。剩下更多的功能大同小异，可以用更多的组件实现更多的功能。</p>
+
+
+    <!-- 显示photos -->
+    
+
+  </div>
+  <div class="post-tags">
+    
+  </div>
+</article>
+  
+    <div class="post-nav">
+      <div class="post-nav-item post-nav-next">
+        
+          <a href="/2019/06/23/PHP-SPL库/" rel="next" title="PHP-SPL库">
+            <span>〈 </span> PHP-SPL库
+          </a>
+        
+      </div>
+  
+      <div class="post-nav-item post-nav-prev">
+        
+          <a href="/2019/08/12/源码解析-EasySwoole框架/" rel="prev" title="源码解析-EasySwoole框架">
+            源码解析-EasySwoole框架 <span>〉</span>
+          </a>
+        
+      </div>
+    </div>
+  
+
+
+
+    </div>
+
+    
+
+  </div>
+
+  <footer class="footer text-center">
+    <div id="bottom-inner">
+      
+        <a href="http://hexo.io" target="_blank" class="footer-link">Hexo</a>
+      
+        <a href="https://github.com/microacup/hexo-theme-micorb" target="_blank" class="footer-link">Theme microb</a>
+      
+    </div>
+  </footer>
+  
+
+<script>
+  // var titleTime,originTitle=document.title;document.addEventListener("visibilitychange",function(){document.hidden?(document.title="[闷声发大财中...] "+originTitle,clearTimeout(titleTime)):(document.title="[+1s] "+originTitle,titleTime=setTimeout(function(){document.title=originTitle},2e3))});
+</script>
+
+<script>
+  // (function (window, document) {
+  //   window.requestAnimationFrame = (function () {
+  //     return window.requestAnimationFrame ||
+  //       window.webkitRequestAnimationFrame ||
+  //       window.mozRequestAnimationFrame ||
+  //       window.oRequestAnimationFrame ||
+  //       window.msRequestAnimationFrame ||
+  //       function (callback) {
+  //         setTimeout(callback, 1000 / 60);
+  //       }
+  //   })();
+
+  //   function init() {
+  //     addMenuEvent();
+  //   }
+  //   init();
+
+  //   function addMenuEvent() {
+  //     var menu = document.getElementById('menu-main-post');
+  //     if (menu) {
+  //       var toc = document.getElementById('toc');
+  //       menu.title = toc ? '目录' : '回到顶部';
+  //       menu.onclick = function () {
+  //         if (toc) {
+  //           if (toc.style.display == 'block') {
+  //             toc.style.display = 'none';
+  //           } else {
+  //             toc.style.display = 'block';
+  //           }
+  //         } else {
+  //           returnTop();
+  //         }
+  //       };
+  //     }
+  //   }
+
+  //   var timer = null;
+
+  //   function returnTop() {
+  //     cancelAnimationFrame(timer);
+  //     timer = requestAnimationFrame(function fn() {
+  //       var oTop = document.body.scrollTop || document.documentElement.scrollTop;
+  //       if (oTop > 0) {
+  //         document.body.scrollTop = document.documentElement.scrollTop = oTop - 50;
+  //         timer = requestAnimationFrame(fn);
+  //       } else {
+  //         cancelAnimationFrame(timer);
+  //       }
+  //     });
+  //   }
+
+  // })(window, document);
+</script>
+
+
+  
+
+
+
+</body>
+</html>

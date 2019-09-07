@@ -1,0 +1,270 @@
+
+<!DOCTYPE html>
+<html lang="">
+
+
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="theme-color" content="#202020">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  
+    <meta name="keywords" content>
+  
+
+  
+    <meta name="description" content="PHP&#39;新&#39;特性">
+  
+  
+  <link rel="icon" type="image/x-icon" href="/logo.png">
+  <title>PHP&#39;新&#39;特性 [ Void ]</title>
+  
+    <!-- stylesheets list from config.yml -->
+    
+      <link rel="stylesheet" href="//cdn.bootcss.com/pure/1.0.0/pure-min.css">
+    
+      <link rel="stylesheet" href="/css/microb.css">
+    
+      <link rel="stylesheet" href="/css/iconfont.css">
+    
+  
+</head>
+
+<body>
+  <nav class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
+  <!-- <ul class="pure-menu-list float-r clearfix">
+    
+      <li class="pure-menu-item toc-menu">
+        <a id="menu-main-post" class="pure-menu-link" href="javascript:;">
+          <img class="menu-icon" src="/logo.png" alt="MENU">
+        </a>
+      </li>
+    
+  </ul>   -->
+  <a class="pure-menu-heading" href="/">
+      <h1 class="title">Void</h1>
+      <!-- <span>一个后端程序员</span> -->
+  </a>
+
+  <a href="/about" class="pure-menu-item pure-menu-has-children">
+    <h2 class="subtitle">about</h2>
+  </a>
+
+  <!-- 
+  <img class="logo" id="logo" src="/logo.png" alt="logo">
+   -->
+</nav>
+
+  <div class="container" id="content-outer">
+    <div class="inner" id="content-inner">
+      <article class="post" id="post">
+  <header class="post-header text-center">
+    <h1 class="title">
+      PHP&#39;新&#39;特性
+    </h1>
+    
+    <time class="time" datetime="2019-05-27T12:31:32.000Z">
+      2019-05-27
+    </time>
+    
+    <hr>
+  </header>
+  <div class="post-content">
+    <h2 id="php＂新＂特性总结"><a href="#php＂新＂特性总结" class="headerlink" title="php＂新＂特性总结"></a>php＂新＂特性总结</h2><hr>
+<p>虽然之前写的项目都上了PHP7.1，但是没有用到PHP的新特性，还是维持PHP5.6的写法．模模糊糊了解过PHP的新特性比如说限制参数类型，限制返回参数限制，??，&lt;=&gt;等．但是刷了EasySwoole的文档后，很多特性看不懂，特地重新归纳了一遍特性．并且以后都用上新特性．</p>
+<blockquote>
+<p>PS：这里的＂新＂特性，不单单指PHP7新特性，还有我新学到的特性用法</p>
+</blockquote>
+<hr>
+<ul>
+<li><p>7.0</p>
+<ol>
+<li>标量类型声明　添加 int string bool float ．( callback object array 等已在5.6中添加了 )</li>
+<li><p>返回类型声明　类型如标量声明类似</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"> 　<span class="function"><span class="keyword">function</span><span class="params">(int ...$ints)</span> : <span class="title">int</span> </span>&#123;</span><br><span class="line"><span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line"> 　&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>NULL合并符（??）</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 等于同　isset($_GET['test']) ? $_GET['test'] : 'none'</span></span><br><span class="line"><span class="comment">// ?? 区分是否定义与NULL</span></span><br><span class="line"><span class="comment">// ?: 0 false '' 会进入false操作　??不会</span></span><br><span class="line">$_GET[<span class="string">'test'</span>] ?? <span class="string">'none'</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>use</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="comment">//　可以一起引入 需要等待IDE优化</span></span><br><span class="line"> <span class="keyword">use</span> <span class="title">some</span>\<span class="title">namespace</span>\&#123;<span class="title">ClassA</span>, <span class="title">ClassB</span>, <span class="title">ClassC</span> <span class="title">as</span> <span class="title">C</span>&#125;;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>define可以定义数组 ( 5.6 const可以定义数组)</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">	<span class="keyword">const</span> MAP = [</span><br><span class="line">		<span class="number">1</span> =&gt; <span class="string">'男'</span>,</span><br><span class="line">		<span class="number">2</span> =&gt; <span class="string">'女'</span>,</span><br><span class="line">	]</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 因为这里我不知道const可以定义数组,所以试了const</span></span><br><span class="line">var_dump(Test::Map[<span class="number">1</span>]); <span class="comment">// return '男'</span></span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+</li>
+<li><p>7.1</p>
+<ol>
+<li><p>可为空类型</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="comment">//可以传入NULL 返回NULL</span></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">test</span> <span class="params">(?int $int)</span>: ?<span class="title">int</span> </span>&#123;</span><br><span class="line"> <span class="keyword">return</span> $int;</span><br><span class="line">&#125;</span><br><span class="line">var_dump(test(<span class="keyword">NULL</span>)); <span class="comment">// return NULL</span></span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li><p>新返回类型 void</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">test</span><span class="params">(int &amp;$left,int &amp;$right)</span> : <span class="title">void</span> </span>&#123;</span><br><span class="line"> <span class="keyword">if</span> ($left == $right) &#123;</span><br><span class="line">  <span class="keyword">return</span>; <span class="comment">//不能返回NULL</span></span><br><span class="line"> &#125;</span><br><span class="line"> $temp = $left;</span><br><span class="line"> $left = $right;</span><br><span class="line"> $right = $temp;</span><br><span class="line">&#125;</span><br><span class="line">$left = <span class="number">1</span>; $right = <span class="number">2</span>;</span><br><span class="line">var_dump(test($left,$right), $left, $right);</span><br><span class="line"><span class="comment">//return NULL 2 1</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>字符串支持负偏移量 (我一直以为早就有了没想到7.1才有,一直在用)</p>
+</li>
+<li><p>常量可见性</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">	<span class="comment">//与function相同　不写即是public</span></span><br><span class="line">	<span class="keyword">const</span> ZERO = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">public</span> <span class="keyword">const</span> ONE = <span class="number">1</span>;</span><br><span class="line">	<span class="keyword">protected</span> <span class="keyword">const</span> TWO = <span class="number">2</span>;</span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">const</span> THREE = <span class="number">3</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>callables可以转成闭包(Closure::fromCallable())　</p>
+<blockquote>
+<p>没有短闭包之前,感觉都不太实用．虽然从7.0就不断扩充Closure的方法</p>
+</blockquote>
+</li>
+<li><p>list 支持键名并且可以用 [] 缩写</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">$data = [</span><br><span class="line">	[</span><br><span class="line">		<span class="string">'id'</span> =&gt; <span class="number">1</span>,</span><br><span class="line">		<span class="string">'name'</span> =&gt; <span class="string">'tom'</span></span><br><span class="line">	]</span><br><span class="line">];</span><br><span class="line"><span class="keyword">foreach</span> ($data <span class="keyword">as</span> [<span class="string">'id'</span> =&gt; $id, <span class="string">'name'</span> =&gt; $name]) &#123;</span><br><span class="line">	var_dump($id, $name); <span class="comment">// return 1 tom </span></span><br><span class="line">&#125;</span><br><span class="line">	</span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">swap</span><span class="params">(&amp;$a, &amp;$b)</span> :<span class="title">void</span> </span>&#123;</span><br><span class="line">	[$a, $b] = [$b, $a];</span><br><span class="line">&#125;</span><br><span class="line">$a = <span class="number">1</span>; $b =<span class="number">2</span>;</span><br><span class="line">var_dump(swap($a, $b), $a, $b); <span class="comment">// NULL 2 1</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>多异常捕获</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">  <span class="comment">// do something</span></span><br><span class="line">&#125; <span class="keyword">catch</span> (FirstException | SecondException $e) &#123;</span><br><span class="line">	<span class="comment">//do something</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li><p>7.2</p>
+<ol>
+<li>新的对象类型　(意思不大 感觉没啥用)</li>
+<li>允许抽象类继承抽象类的时候，重写抽象方法</li>
+<li>允许实现接口时，省略参数类型</li>
+<li>允许命名空间分组，最后使用逗号<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">use</span> <span class="title">SomeClass</span>\<span class="title">SomeRoute</span>\&#123;</span><br><span class="line">	<span class="title">SomeAction1</span>,</span><br><span class="line">	<span class="title">SomeAction2</span>,</span><br><span class="line">	<span class="title">SomeAction3</span>.</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+</li>
+<li><p>7.3</p>
+<ol>
+<li><p>允许引用list</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">$data = [</span><br><span class="line">	[</span><br><span class="line">		<span class="string">'id'</span> =&gt; <span class="number">1</span>,</span><br><span class="line">		<span class="string">'name'</span> =&gt; <span class="string">'tom'</span></span><br><span class="line">	],</span><br><span class="line">	[</span><br><span class="line">		<span class="string">'id'</span> =&gt; <span class="number">2</span>,</span><br><span class="line">		<span class="string">'name'</span> =&gt; <span class="string">'jom'</span></span><br><span class="line">	]</span><br><span class="line">]</span><br><span class="line">	</span><br><span class="line">  <span class="keyword">foreach</span>($data <span class="keyword">as</span> [<span class="string">'id'</span> =&gt; &amp;$id, <span class="string">'name'</span> =&gt; &amp;$name]) &#123;</span><br><span class="line">	$id = <span class="number">3</span>;</span><br><span class="line">	$name = <span class="string">'test'</span>;</span><br><span class="line">&#125;</span><br><span class="line">  var_dump($data);</span><br><span class="line">  <span class="comment">//return </span></span><br><span class="line">  <span class="comment">//0 =&gt; ['id' =&gt; 3, 'name' =&gt; 'test'], </span></span><br><span class="line">  <span class="comment">//1 =&gt; ['id' =&gt; 3, 'name' =&gt; 'test']</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>函数可以尾随逗号</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">		　<span class="function"><span class="keyword">function</span> <span class="title">test</span> <span class="params">($a, $b, $c, $d)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">&#125;</span><br><span class="line">$a = <span class="number">1</span>; $b = <span class="number">2</span>; $c = <span class="number">3</span>; $d = <span class="number">4</span>;</span><br><span class="line">		　$result = test(</span><br><span class="line">	$a,</span><br><span class="line">	$b,</span><br><span class="line">	$c,</span><br><span class="line">	$d,</span><br><span class="line">);</span><br><span class="line">var_dump($result); <span class="comment">//return true</span></span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+</li>
+<li><p>附加</p>
+<blockquote>
+<p>在刷EasySwoole的文档的时候,发现使用的trait来实现单例模式,让我发现了trait的好处，它类似于AOP一样的，横面水平扩展来复用代码块．下面是EasySwoole的单例实现</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">trait</span> Single&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> $instance;</span><br><span class="line">    <span class="keyword">static</span> <span class="function"><span class="keyword">function</span> <span class="title">getInstance</span><span class="params">()</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(!<span class="keyword">isset</span>(<span class="keyword">self</span>::$instance))&#123;</span><br><span class="line">            <span class="keyword">self</span>::$instance = <span class="keyword">new</span> <span class="keyword">static</span>();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">self</span>::$instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">	<span class="keyword">use</span> <span class="title">Single</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">Test::getInstance();</span><br></pre></td></tr></table></figure></blockquote>
+</li>
+</ul>
+
+
+    <!-- 显示photos -->
+    
+
+  </div>
+  <div class="post-tags">
+    
+  </div>
+</article>
+  
+    <div class="post-nav">
+      <div class="post-nav-item post-nav-next">
+        
+          <a href="/2019/05/12/源码解析-predis/" rel="next" title="源码解析-predis">
+            <span>〈 </span> 源码解析-predis
+          </a>
+        
+      </div>
+  
+      <div class="post-nav-item post-nav-prev">
+        
+          <a href="/2019/06/17/源码解析-阿里云短信SDK/" rel="prev" title="源码解析-阿里云短信SDK">
+            源码解析-阿里云短信SDK <span>〉</span>
+          </a>
+        
+      </div>
+    </div>
+  
+
+
+  <div id="toc" class="toc-article">
+    <strong class="toc-title">目录</strong>
+    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#php＂新＂特性总结"><span class="toc-text">php＂新＂特性总结</span></a></li></ol>
+  </div>
+
+
+    </div>
+
+    
+
+  </div>
+
+  <footer class="footer text-center">
+    <div id="bottom-inner">
+      
+        <a href="http://hexo.io" target="_blank" class="footer-link">Hexo</a>
+      
+        <a href="https://github.com/microacup/hexo-theme-micorb" target="_blank" class="footer-link">Theme microb</a>
+      
+    </div>
+  </footer>
+  
+
+<script>
+  // var titleTime,originTitle=document.title;document.addEventListener("visibilitychange",function(){document.hidden?(document.title="[闷声发大财中...] "+originTitle,clearTimeout(titleTime)):(document.title="[+1s] "+originTitle,titleTime=setTimeout(function(){document.title=originTitle},2e3))});
+</script>
+
+<script>
+  // (function (window, document) {
+  //   window.requestAnimationFrame = (function () {
+  //     return window.requestAnimationFrame ||
+  //       window.webkitRequestAnimationFrame ||
+  //       window.mozRequestAnimationFrame ||
+  //       window.oRequestAnimationFrame ||
+  //       window.msRequestAnimationFrame ||
+  //       function (callback) {
+  //         setTimeout(callback, 1000 / 60);
+  //       }
+  //   })();
+
+  //   function init() {
+  //     addMenuEvent();
+  //   }
+  //   init();
+
+  //   function addMenuEvent() {
+  //     var menu = document.getElementById('menu-main-post');
+  //     if (menu) {
+  //       var toc = document.getElementById('toc');
+  //       menu.title = toc ? '目录' : '回到顶部';
+  //       menu.onclick = function () {
+  //         if (toc) {
+  //           if (toc.style.display == 'block') {
+  //             toc.style.display = 'none';
+  //           } else {
+  //             toc.style.display = 'block';
+  //           }
+  //         } else {
+  //           returnTop();
+  //         }
+  //       };
+  //     }
+  //   }
+
+  //   var timer = null;
+
+  //   function returnTop() {
+  //     cancelAnimationFrame(timer);
+  //     timer = requestAnimationFrame(function fn() {
+  //       var oTop = document.body.scrollTop || document.documentElement.scrollTop;
+  //       if (oTop > 0) {
+  //         document.body.scrollTop = document.documentElement.scrollTop = oTop - 50;
+  //         timer = requestAnimationFrame(fn);
+  //       } else {
+  //         cancelAnimationFrame(timer);
+  //       }
+  //     });
+  //   }
+
+  // })(window, document);
+</script>
+
+
+  
+
+
+
+</body>
+</html>
