@@ -1,0 +1,278 @@
+
+<!DOCTYPE html>
+<html lang="">
+
+
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="theme-color" content="#202020">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  
+    <meta name="keywords" content>
+  
+
+  
+    <meta name="description" content="Structures库">
+  
+  
+  <link rel="icon" type="image/x-icon" href="/logo.png">
+  <title>Structures库 [ Void ]</title>
+  
+    <!-- stylesheets list from config.yml -->
+    
+      <link rel="stylesheet" href="//cdn.bootcss.com/pure/1.0.0/pure-min.css">
+    
+      <link rel="stylesheet" href="/css/microb.css">
+    
+      <link rel="stylesheet" href="/css/iconfont.css">
+    
+  
+</head>
+
+<body>
+  <nav class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
+  <!-- <ul class="pure-menu-list float-r clearfix">
+    
+      <li class="pure-menu-item toc-menu">
+        <a id="menu-main-post" class="pure-menu-link" href="javascript:;">
+          <img class="menu-icon" src="/logo.png" alt="MENU">
+        </a>
+      </li>
+    
+  </ul>   -->
+  <a class="pure-menu-heading" href="/">
+      <h1 class="title">Void</h1>
+      <!-- <span>一个后端程序员</span> -->
+  </a>
+
+  <a href="/about" class="pure-menu-item pure-menu-has-children">
+    <h2 class="subtitle">about</h2>
+  </a>
+
+  <!-- 
+  <img class="logo" id="logo" src="/logo.png" alt="logo">
+   -->
+</nav>
+
+  <div class="container" id="content-outer">
+    <div class="inner" id="content-inner">
+      <article class="post" id="post">
+  <header class="post-header text-center">
+    <h1 class="title">
+      Structures库
+    </h1>
+    
+    <time class="time" datetime="2019-09-14T08:53:10.000Z">
+      2019-09-14
+    </time>
+    
+    <hr>
+  </header>
+  <div class="post-content">
+    <p>PHP Data Structures</p>
+<hr>
+<p>这是PHP7更新后带来的，我很遗憾没有提前发现它。甚至我自己在代码中实现了一部分Map的功能。Map与Vector以及其他的数据结构，会让PHP代码更加友好，更加OO。会很大程度避免各种数组函数，参数位置不一致的问题。</p>
+<p>文档位置: <a href="https://www.php.net/manual/zh/book.ds.php" target="_blank" rel="noopener">Data Structures</a></p>
+<blockquote>
+<p>如果未安装ds扩展</p>
+<p>可以 <code>composer require php-ds/php-ds</code> 不依赖扩展使用如下类 (不建议)</p>
+</blockquote>
+<p>可以根据系统给予的Collection、Hashable、Sequence，自行实现各种数据结构。</p>
+<p><code>Vector</code>  个人认为是用来代替Array的一个类。 （这里的Array不是Key-Value的map）</p>
+<hr>
+<h3 id="这里举一个Vector的例子"><a href="#这里举一个Vector的例子" class="headerlink" title="这里举一个Vector的例子"></a>这里举一个Vector的例子</h3><p>public Ds\Vector::allocate ( int <code>$capacity</code> ) : void  为数组分配容量</p>
+<p>public Ds\Vector::apply (callable <code>$callback</code> ) : void 根据$callback中的返回值修改数组值</p>
+<p>public Ds\Vector::capacity ( void ) : int 返回当前容量</p>
+<p>public Ds\Vector::clear ( void ) : void 清空数组</p>
+<p>public Ds\Vector::__construct ([ <a href="https://www.php.net/manual/zh/language.pseudo-types.php#language.types.mixed" target="_blank" rel="noopener">mixed</a> <code>$values</code> ] ) $values 只接收实现<code>traversable</code>接口的对象与PHP中的array </p>
+<blockquote>
+<p>传入key不为数字的array，不会报错会自动格式化成有序的数字键。</p>
+<p>如果传入这样的数组</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">$data = [</span><br><span class="line">    <span class="string">'test1'</span> =&gt; [</span><br><span class="line">        <span class="string">'test'</span> =&gt; <span class="string">'test'</span></span><br><span class="line">    ],</span><br><span class="line">    <span class="string">'test2'</span> =&gt; <span class="string">'test1'</span></span><br><span class="line">];</span><br></pre></td></tr></table></figure>
+</blockquote>
+<blockquote>
+<p>会变成这样</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">object(Ds\Vector)<span class="comment">#3 (2) &#123;</span></span><br><span class="line">  [<span class="number">0</span>]=&gt; <span class="keyword">array</span>(<span class="number">1</span>) &#123;</span><br><span class="line">    [<span class="string">"test"</span>] =&gt; string(<span class="number">4</span>) <span class="string">"test"</span></span><br><span class="line">  &#125;</span><br><span class="line">  [<span class="number">1</span>] =&gt; string(<span class="number">5</span>) <span class="string">"test1"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>public Ds\Vector::contains ( mixed <code>$...values</code> ] ) : bool 判断值是否存在于数组中</p>
+<p>public Ds\Vector::copy ( void ) : Ds\Vector 浅拷贝该数组</p>
+<p>public Countable::count ( void ) : int 实现countable的方法 返回数组中值个数</p>
+<p>public Ds\Vector::filter ([ callabl <code>$callback</code> ] ) : Ds\Vector 过滤数组值 这里是返回一个Vector，不是在内部修改。</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">callback ( mixed $value ) : bool</span><br><span class="line">根据callback 返回的<span class="keyword">true</span>与<span class="keyword">false</span>来判断是否过滤该值</span><br></pre></td></tr></table></figure>
+<p>public Ds\Vector::find ( mixed <code>$value</code> ) : mixed 返回值的键值 不存在则会返回false</p>
+<p>public Ds\Vector::first ( void ) : mixed 返回第一个值 不存在则抛出<a href="https://www.php.net/manual/zh/class.underflowexception.php" target="_blank" rel="noopener">UnderflowException</a>异常</p>
+<p>public Ds\Vector::get ( int <code>$index</code> ) : mixed 根据键值获取值 若不存在则抛出<a href="https://www.php.net/manual/zh/class.outofrangeexception.php" target="_blank" rel="noopener">OutOfRangeException</a>异常</p>
+<p>public Ds\Vector::insert ( int <code>$index</code> [, mixed <code>$...values</code> ] ) : void 添加键值与值 如果index不存在并且不是下一个index会抛出<a href="https://www.php.net/manual/zh/class.outofrangeexception.php" target="_blank" rel="noopener">OutOfRangeException</a>异常</p>
+<p>public Ds\Vector::isEmpty ( void ) : bool 判断数组是否为空</p>
+<p>public Ds\Vector::join ([ string <code>$glue</code> ] ) : string 将数组以$glue作为分隔符进行字符串输出</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">如果vector存在数组会被自动格式化成<span class="keyword">Array</span>字符串，如果存在object并且object没有实现__toString会抛出一个PHP E_RECOVERABLE_ERROR级别错误</span><br></pre></td></tr></table></figure>
+<p>public JsonSerializable::jsonSerialize ( void ) : mixed 实现JsonSerializable的方法</p>
+<p>public Ds\Vector::last ( void ) : mixed 获取最后一个值 如果不存在则抛出<a href="https://www.php.net/manual/zh/class.underflowexception.php" target="_blank" rel="noopener">UnderflowException</a>异常</p>
+<p>public Ds\Vector::map ( <a href="https://www.php.net/manual/zh/language.types.callable.php" target="_blank" rel="noopener">callable</a> <code>$callback</code> ) : Ds\Vector 与apply类似，唯一不同是返回一个Vector，而不是做内部修改</p>
+<p>public Ds\Vector::merge ( <a href="https://www.php.net/manual/zh/language.pseudo-types.php#language.types.mixed" target="_blank" rel="noopener">mixed</a> <code>$values</code> ) : Ds\Vector $value 需要实现<code>traversable</code>的对象或者数组 合并</p>
+<p>public Ds\Vector::pop ( void ) : mixed 删除最后一个值 如果为空则抛出<a href="https://www.php.net/manual/zh/class.underflowexception.php" target="_blank" rel="noopener">UnderflowException</a></p>
+<p>public Ds\Vector::push ([ <a href="https://www.php.net/manual/zh/language.pseudo-types.php#language.types.mixed" target="_blank" rel="noopener">mixed</a> <code>$...values</code> ] ) : void  将值加到数组末尾</p>
+<p>public Ds\Vector::reduce ( <a href="https://www.php.net/manual/zh/language.types.callable.php" target="_blank" rel="noopener">callable</a> <code>$callback</code> [, <a href="https://www.php.net/manual/zh/language.pseudo-types.php#language.types.mixed" target="_blank" rel="noopener">mixed</a> <code>$initial</code> ] ) : mixed 不知道该怎么解释应该就是赋给一个值不断循环迭代一个值，最后return</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">$data = [</span><br><span class="line">    <span class="number">1</span>,<span class="number">2</span></span><br><span class="line">];</span><br><span class="line"></span><br><span class="line">var_dump((<span class="keyword">new</span> Vector($data))-&gt;reduce(<span class="function"><span class="keyword">function</span> <span class="params">($carry, $value)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> $carry + $value;</span><br><span class="line">&#125;, <span class="number">1</span>));</span><br><span class="line"></span><br><span class="line"><span class="comment">//$result等同于上面reduce方法返回的值</span></span><br><span class="line">$result = <span class="number">1</span>;</span><br><span class="line"><span class="keyword">foreach</span> ($data <span class="keyword">as</span> $item) &#123;</span><br><span class="line">  $result += $item;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>public Ds\Vector::remove ( int <code>$index</code> ) : mixed 根据键值删除值 如果键值不存在则抛出<a href="https://www.php.net/manual/zh/class.outofrangeexception.php" target="_blank" rel="noopener">OutOfRangeException</a>异常</p>
+<p>public Ds\Vector::reverse ( void ) : void 将数组中的键值倒置</p>
+<p>public Ds\Vector::reversed ( void ) : Ds\Vector 与reverse不同的是会返回一个数组副本而不是直接修改内部数据</p>
+<p>public Ds\Vector::rotate ( int <code>$rotations</code> ) : void 旋转数组 将第一位转到最后一位 $rotations为旋转的次数</p>
+<p>public Ds\Vector::set ( int <code>$index</code> , <a href="https://www.php.net/manual/zh/language.pseudo-types.php#language.types.mixed" target="_blank" rel="noopener">mixed</a> <code>$value</code> ) : void 修改键值 如果键名不存在则抛出<a href="https://www.php.net/manual/zh/class.outofrangeexception.php" target="_blank" rel="noopener">OutOfRangeException</a>异常</p>
+<p>public Ds\Vector::shift ( void ) : mixed 从头删除值 如果为空抛出<a href="https://www.php.net/manual/zh/class.underflowexception.php" target="_blank" rel="noopener">UnderflowException</a>异常</p>
+<p>public Ds\Vector::slice ( int <code>$index</code> [, int <code>$length</code> ] ) : Ds\Vector 切成子集</p>
+<p>public Ds\Vector::sort ([ <a href="https://www.php.net/manual/zh/language.types.callable.php" target="_blank" rel="noopener">callable</a> <code>$comparator</code> ] ) : void 排序</p>
+<p>public Ds\Deque::sorted ([ <a href="https://www.php.net/manual/zh/language.types.callable.php" target="_blank" rel="noopener">callable</a> <code>$comparator</code> ] ) : Ds\Deque 与sort不同的是 不修改内部值 返回一个排序副本</p>
+<p>public Ds\Vector::sum ( void ) : <a href="https://www.php.net/manual/zh/language.pseudo-types.php#language.types.number" target="_blank" rel="noopener">number</a> 将数组中的值相加 (string的话会被转成number array与object默认为0)</p>
+<p>public Ds\Vector::toArray ( void ) : array 转换成array类型</p>
+<p>public Ds\Vector::unshift ([ <a href="https://www.php.net/manual/zh/language.pseudo-types.php#language.types.mixed" target="_blank" rel="noopener">mixed</a> <code>$values</code> ] ) : void 将值插入开头</p>
+<hr>
+<p>目前看到</p>
+<ul>
+<li><p><a href="https://www.php.net/manual/zh/class.ds-deque.php" target="_blank" rel="noopener">Deque 类</a> </p>
+<ol>
+<li>与<code>Vector</code>相比shift() 与 unshift() 都是 O(1)次</li>
+<li>但是容量必须是2的幂 （理论内存使用应该会比Vector多）</li>
+</ol>
+</li>
+<li><p><a href="https://www.php.net/manual/zh/class.ds-vector.php" target="_blank" rel="noopener">Vector 类</a></p>
+<ol>
+<li>get(), set(), push(), pop() 都是 O(1) </li>
+<li>使用内存比原先Array少</li>
+</ol>
+</li>
+<li><a href="https://www.php.net/manual/zh/class.ds-map.php" target="_blank" rel="noopener">Map 类</a><ol>
+<li>基本与原先Array相同，使用方式更加OO</li>
+</ol>
+</li>
+<li><a href="https://www.php.net/manual/zh/class.ds-set.php" target="_blank" rel="noopener">Set 类</a><ol>
+<li>内部值只能是唯一值</li>
+</ol>
+</li>
+<li><a href="https://www.php.net/manual/zh/class.ds-stack.php" target="_blank" rel="noopener">Stack 类</a><ol>
+<li>栈 只允许后进先出 内部使用Vector</li>
+</ol>
+</li>
+<li><a href="https://www.php.net/manual/zh/class.ds-queue.php" target="_blank" rel="noopener">Queue 类</a><ol>
+<li>队列 实现 先进先出原则</li>
+</ol>
+</li>
+</ul>
+
+
+    <!-- 显示photos -->
+    
+
+  </div>
+  <div class="post-tags">
+    
+  </div>
+</article>
+  
+    <div class="post-nav">
+      <div class="post-nav-item post-nav-next">
+        
+          <a href="/2019/09/07/源码解析-QueryList框架/" rel="next" title="源码解析-QueryList框架">
+            <span>〈 </span> 源码解析-QueryList框架
+          </a>
+        
+      </div>
+  
+      <div class="post-nav-item post-nav-prev">
+        
+      </div>
+    </div>
+  
+
+
+  <div id="toc" class="toc-article">
+    <strong class="toc-title">目录</strong>
+    <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#这里举一个Vector的例子"><span class="toc-text">这里举一个Vector的例子</span></a></li></ol>
+  </div>
+
+
+    </div>
+
+    
+
+  </div>
+
+  <footer class="footer text-center">
+    <div id="bottom-inner">
+      
+        <a href="http://hexo.io" target="_blank" class="footer-link">Hexo</a>
+      
+        <a href="https://github.com/microacup/hexo-theme-micorb" target="_blank" class="footer-link">Theme microb</a>
+      
+    </div>
+  </footer>
+  
+
+<script>
+  // var titleTime,originTitle=document.title;document.addEventListener("visibilitychange",function(){document.hidden?(document.title="[闷声发大财中...] "+originTitle,clearTimeout(titleTime)):(document.title="[+1s] "+originTitle,titleTime=setTimeout(function(){document.title=originTitle},2e3))});
+</script>
+
+<script>
+  // (function (window, document) {
+  //   window.requestAnimationFrame = (function () {
+  //     return window.requestAnimationFrame ||
+  //       window.webkitRequestAnimationFrame ||
+  //       window.mozRequestAnimationFrame ||
+  //       window.oRequestAnimationFrame ||
+  //       window.msRequestAnimationFrame ||
+  //       function (callback) {
+  //         setTimeout(callback, 1000 / 60);
+  //       }
+  //   })();
+
+  //   function init() {
+  //     addMenuEvent();
+  //   }
+  //   init();
+
+  //   function addMenuEvent() {
+  //     var menu = document.getElementById('menu-main-post');
+  //     if (menu) {
+  //       var toc = document.getElementById('toc');
+  //       menu.title = toc ? '目录' : '回到顶部';
+  //       menu.onclick = function () {
+  //         if (toc) {
+  //           if (toc.style.display == 'block') {
+  //             toc.style.display = 'none';
+  //           } else {
+  //             toc.style.display = 'block';
+  //           }
+  //         } else {
+  //           returnTop();
+  //         }
+  //       };
+  //     }
+  //   }
+
+  //   var timer = null;
+
+  //   function returnTop() {
+  //     cancelAnimationFrame(timer);
+  //     timer = requestAnimationFrame(function fn() {
+  //       var oTop = document.body.scrollTop || document.documentElement.scrollTop;
+  //       if (oTop > 0) {
+  //         document.body.scrollTop = document.documentElement.scrollTop = oTop - 50;
+  //         timer = requestAnimationFrame(fn);
+  //       } else {
+  //         cancelAnimationFrame(timer);
+  //       }
+  //     });
+  //   }
+
+  // })(window, document);
+</script>
+
+
+  
+
+
+
+</body>
+</html>
