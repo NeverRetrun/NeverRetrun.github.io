@@ -1,0 +1,425 @@
+
+<!DOCTYPE html>
+<html lang="">
+
+
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="theme-color" content="#202020">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  
+    <meta name="keywords" content>
+  
+
+  
+    <meta name="description" content="关于商品超卖方案压测">
+  
+  
+  <link rel="icon" type="image/x-icon" href="/logo.png">
+  <title>关于商品超卖方案压测 [ Void ]</title>
+  
+    <!-- stylesheets list from config.yml -->
+    
+      <link rel="stylesheet" href="//cdn.bootcss.com/pure/1.0.0/pure-min.css">
+    
+      <link rel="stylesheet" href="/css/microb.css">
+    
+      <link rel="stylesheet" href="/css/iconfont.css">
+    
+  
+</head>
+
+<body>
+  <nav class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
+  <!-- <ul class="pure-menu-list float-r clearfix">
+    
+      <li class="pure-menu-item toc-menu">
+        <a id="menu-main-post" class="pure-menu-link" href="javascript:;">
+          <img class="menu-icon" src="/logo.png" alt="MENU">
+        </a>
+      </li>
+    
+  </ul>   -->
+  <a class="pure-menu-heading" href="/">
+      <h1 class="title">Void</h1>
+      <!-- <span>一个后端程序员</span> -->
+  </a>
+
+  <a href="/about" class="pure-menu-item pure-menu-has-children">
+    <h2 class="subtitle">about</h2>
+  </a>
+
+  <!-- 
+  <img class="logo" id="logo" src="/logo.png" alt="logo">
+   -->
+</nav>
+
+  <div class="container" id="content-outer">
+    <div class="inner" id="content-inner">
+      <article class="post" id="post">
+  <header class="post-header text-center">
+    <h1 class="title">
+      关于商品超卖方案压测
+    </h1>
+    
+    <time class="time" datetime="2019-09-23T09:04:08.000Z">
+      2019-09-23
+    </time>
+    
+    <hr>
+  </header>
+  <div class="post-content">
+    <p>关于商品超卖压测</p>
+<hr>
+<p>这次是因为一次面试中，面试官说普通数据库中加读锁会有问题。他大概想通过Redis的原子计数或list中pop方法来解决超卖问题。我觉得加读锁没有问题，但是会大大降低并发量，那么我们就来压测一波。</p>
+<p>压测3种方案：</p>
+<ul>
+<li>MySQL中加读锁</li>
+<li>Redis String 原子计数</li>
+<li>Redis List</li>
+</ul>
+<p><img src="https://i.loli.net/2019/09/22/gmrNpJ8h1YHBe6P.png" alt="docker config" style="zoom:40%;"></p>
+<blockquote>
+<p>docker 配置为 2核2G</p>
+</blockquote>
+<p>PHP-FPM配置：</p>
+<figure class="highlight ini"><table><tr><td class="code"><pre><span class="line"><span class="attr">pm</span> = dynamic</span><br><span class="line"><span class="attr">pm.max_children</span> = <span class="number">5</span></span><br><span class="line"><span class="attr">pm.start_servers</span> = <span class="number">2</span></span><br><span class="line"><span class="attr">pm.min_spare_servers</span> = <span class="number">1</span></span><br><span class="line"><span class="attr">pm.max_spare_servers</span> = <span class="number">3</span></span><br></pre></td></tr></table></figure>
+<p>压测命令：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">wrk -d 3 -c 200 -t 5 http://127.0.0.1/*.php</span><br><span class="line"><span class="comment"># 5线程 每个线程并发200 持续3秒</span></span><br></pre></td></tr></table></figure>
+<p>数据库：</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>capacity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>100</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>MySQL加读锁</li>
+</ul>
+<p>以下是PHP代码，主要在事务中 加读锁 后写数据 后提交事务。</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">$id = <span class="number">1</span>;</span><br><span class="line">$conn = <span class="keyword">new</span> PDO($config[<span class="string">'dsn'</span>], $config[<span class="string">'user_name'</span>], $config[<span class="string">'password'</span>]);</span><br><span class="line">$conn-&gt;beginTransaction();</span><br><span class="line"></span><br><span class="line">$readSql = <span class="string">"select * from cap where id = ? for update"</span>;</span><br><span class="line">$sth = $conn-&gt;prepare($readSql);</span><br><span class="line">$sth-&gt;execute([$id]);</span><br><span class="line">$result = $sth-&gt;fetch(PDO::FETCH_ASSOC);</span><br><span class="line"></span><br><span class="line">$writeSql = <span class="string">"update cap set capacity = ? where id = ?"</span>;</span><br><span class="line">$sth = $conn-&gt;prepare($writeSql);</span><br><span class="line">$result = $sth-&gt;execute([intval(--$result[<span class="string">'capacity'</span>]), $id]);</span><br><span class="line">$conn-&gt;commit();</span><br></pre></td></tr></table></figure>
+<p>压测结果：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">次数</th>
+<th style="text-align:center">1</th>
+<th style="text-align:center">2</th>
+<th style="text-align:center">3</th>
+<th style="text-align:center">4</th>
+<th style="text-align:center">5</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">剩余数量</td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">0</td>
+</tr>
+<tr>
+<td style="text-align:center">Requests/sec</td>
+<td style="text-align:center">184.62</td>
+<td style="text-align:center">178.41</td>
+<td style="text-align:center">183.66</td>
+<td style="text-align:center">184.66</td>
+<td style="text-align:center">186.12</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Redis string原子计数</li>
+</ul>
+<p>以下是PHP代码，主要用来操控Redis String类型，用key值获取value，在进行原子自减。</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">$key = <span class="string">'cap'</span>;</span><br><span class="line">$client = <span class="keyword">new</span> Redis();</span><br><span class="line">$client-&gt;connect($config[<span class="string">'host'</span>], $config[<span class="string">'port'</span>],<span class="number">5</span>);</span><br><span class="line"></span><br><span class="line">$remainder = $client-&gt;get($key);</span><br><span class="line"><span class="keyword">if</span> ($remainder &lt;= <span class="number">0</span> ) &#123;</span><br><span class="line">    <span class="keyword">exit</span>();</span><br><span class="line">&#125;</span><br><span class="line">$client-&gt;decr($key);</span><br></pre></td></tr></table></figure>
+<p>压测结果：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">次数</th>
+<th style="text-align:center">1</th>
+<th style="text-align:center">2</th>
+<th style="text-align:center">3</th>
+<th style="text-align:center">4</th>
+<th style="text-align:center">5</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">剩余数量</td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">-1</td>
+<td style="text-align:center">-1</td>
+<td style="text-align:center">0</td>
+</tr>
+<tr>
+<td style="text-align:center">Requests/sec</td>
+<td style="text-align:center">265.99</td>
+<td style="text-align:center">264.03</td>
+<td style="text-align:center">255.64</td>
+<td style="text-align:center">238.72</td>
+<td style="text-align:center">275.69</td>
+</tr>
+</tbody>
+</table>
+<p>这里是出现了负数的情况，我一开始的误区是redis是单线程，命令是一条条执行，我想象中单线程命令是这样的</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">redis 进程中处理方法</span><br><span class="line">get()</span><br><span class="line">decr()</span><br><span class="line">get()</span><br><span class="line">decr()</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>如果是这样，不应该出现负数。但实际上的情况应该是这样的</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">redis 进程中的处理方法</span><br><span class="line">get()</span><br><span class="line">get()</span><br><span class="line">decr()</span><br><span class="line">decr()</span><br></pre></td></tr></table></figure>
+<p>因为并发了，如果2人同时点，当然是先发送2个get()请求。导致我们代码中的判断出错，额外发送了多余的decr()，所以只要遇到2条redis命令，并发情况几乎无法保证它是正常工作的。我查询了资料，解决方式必须避免以下这点</p>
+<ul>
+<li><p>所有先利用redis判断后进行redis操作的代码，都是无法保证准确的</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="comment">#这种形式的代码 在并发情况均会出现判断出错的情况</span></span><br><span class="line"><span class="keyword">if</span> ($redis-&gt;...()) &#123;</span><br><span class="line">  $redis-&gt;...()</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">  ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<ol>
+<li><p>第一种方法</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> ($redis-&gt;incr(<span class="string">'key'</span>) &gt; $maxValue) &#123;</span><br><span class="line">  ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>不在意incr的值，只要超过了限制就直接不执行逻辑。这种方法是在Hyperf交流群一个老哥告诉我的，相当简单实用。</p>
+<blockquote>
+<p>这里有个问题，如果自定义个数的时候，剩余库存3，但是顾客要买4，会自增4后判断超过了限制，这样会造成少卖的情况</p>
+</blockquote>
+<p>以下是PHP代码：</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">$key = <span class="string">'cap'</span>;</span><br><span class="line">$countKey = <span class="string">'count_key'</span>;</span><br><span class="line">$max = <span class="number">100</span>;</span><br><span class="line">$client = <span class="keyword">new</span> Redis();</span><br><span class="line">$client-&gt;connect($config[<span class="string">'host'</span>], $config[<span class="string">'port'</span>], <span class="number">5</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> ($client-&gt;incr($countKey) &gt; $max) &#123;</span><br><span class="line">    <span class="keyword">exit</span>();</span><br><span class="line">&#125;</span><br><span class="line">$client-&gt;decr($key);</span><br></pre></td></tr></table></figure>
+<p> 压测结果：</p>
+</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">次数</th>
+<th style="text-align:center">1</th>
+<th style="text-align:center">2</th>
+<th style="text-align:center">3</th>
+<th style="text-align:center">4</th>
+<th style="text-align:center">5</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">剩余数量</td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">0</td>
+</tr>
+<tr>
+<td style="text-align:center">Requests/sec</td>
+<td style="text-align:center">245.03</td>
+<td style="text-align:center">256.33</td>
+<td style="text-align:center">248.06</td>
+<td style="text-align:center">255.89</td>
+<td style="text-align:center">262.62</td>
+</tr>
+</tbody>
+</table>
+<ol start="2">
+<li><p>第二种方法</p>
+<p>加上Redis分布式锁，但是必须得用上LUA拼接命令才能保证判断和设置值原子性。这里需要保证以下几点 （官方文档上抄的）</p>
+<ol>
+<li>不能出现死锁情况</li>
+<li>互斥，只有一个客户端可以拿到锁</li>
+<li>容错，大多数Redis处于运行就可拿到锁</li>
+</ol>
+<p>这里Redis官方文档给出几个可用的实现：<a href="https://github.com/ronnylt/redlock-php" target="_blank" rel="noopener">Redlock-php</a>（看代码比说的来的直观）、<a href="https://github.com/malkusch/lock#phpredismutex" target="_blank" rel="noopener">PHPRedisMutex</a> 、 <a href="https://github.com/cheprasov/php-redis-lock" target="_blank" rel="noopener">cheprasov / php-redis-lock</a></p>
+<p>我使用了<a href="https://github.com/ronnylt/redlock-php" target="_blank" rel="noopener">Redlock-php</a>的代码来测试</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">$key = <span class="string">'cap'</span>;</span><br><span class="line">$lockKey = <span class="string">'lock'</span>;</span><br><span class="line">$redLock = <span class="keyword">new</span> RedLock([</span><br><span class="line">    [<span class="string">'192.168.0.108'</span>, <span class="number">6379</span>, <span class="number">0.01</span>]</span><br><span class="line">]);</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (($lock = $redLock-&gt;lock($lockKey, <span class="number">1000</span>)) === <span class="keyword">false</span>) &#123;</span><br><span class="line">    <span class="keyword">exit</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$instance = $redLock-&gt;getInstance();</span><br><span class="line">$remainder = $instance[<span class="number">0</span>]-&gt;get($key);</span><br><span class="line"><span class="keyword">if</span> ($remainder &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">    $redLock-&gt;unlock($lock);</span><br><span class="line">    <span class="keyword">exit</span>();</span><br><span class="line">&#125;</span><br><span class="line">$instance[<span class="number">0</span>]-&gt;decr($key);</span><br><span class="line">$redLock-&gt;unlock($lock);</span><br></pre></td></tr></table></figure>
+<p> 压测结果：</p>
+</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">次数</th>
+<th style="text-align:center">1</th>
+<th style="text-align:center">2</th>
+<th style="text-align:center">3</th>
+<th style="text-align:center">4</th>
+<th style="text-align:center">5</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">剩余数量</td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">0</td>
+</tr>
+<tr>
+<td style="text-align:center">Requests/sec</td>
+<td style="text-align:center">119.32</td>
+<td style="text-align:center">119.36</td>
+<td style="text-align:center">129.01</td>
+<td style="text-align:center">124.07</td>
+<td style="text-align:center">112.82</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>这里的压测结果不理想，我觉得这里和加锁的策略有关。</p>
+</blockquote>
+<ul>
+<li><p>Redis List POP PUSH防止超卖</p>
+<p>原理就是将List作为队列，先push进库存后慢慢pop。</p>
+<p>以下是PHP代码：</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">$key = <span class="string">'cap_list'</span>;</span><br><span class="line">$client = <span class="keyword">new</span> Redis();</span><br><span class="line">$client-&gt;connect($config[<span class="string">'host'</span>], $config[<span class="string">'port'</span>]);</span><br><span class="line"><span class="comment">//while ($client-&gt;lPush($key, 1) &lt; 100);</span></span><br><span class="line">$client-&gt;lPop($key);</span><br></pre></td></tr></table></figure>
+<p>压测结果：</p>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">次数</th>
+<th style="text-align:center">1</th>
+<th style="text-align:center">2</th>
+<th style="text-align:center">3</th>
+<th style="text-align:center">4</th>
+<th style="text-align:center">5</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">剩余数量</td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">0</td>
+</tr>
+<tr>
+<td style="text-align:center">Requests/sec</td>
+<td style="text-align:center">275.85</td>
+<td style="text-align:center">258.61</td>
+<td style="text-align:center">246.93</td>
+<td style="text-align:center">265.83</td>
+<td style="text-align:center">252.96</td>
+</tr>
+</tbody>
+</table>
+
+
+    <!-- 显示photos -->
+    
+
+  </div>
+  <div class="post-tags">
+    
+  </div>
+</article>
+  
+    <div class="post-nav">
+      <div class="post-nav-item post-nav-next">
+        
+          <a href="/2019/09/14/Structures库/" rel="next" title="PHP-Data Structures库">
+            <span>〈 </span> PHP-Data Structures库
+          </a>
+        
+      </div>
+  
+      <div class="post-nav-item post-nav-prev">
+        
+      </div>
+    </div>
+  
+
+
+
+    </div>
+
+    
+
+  </div>
+
+  <footer class="footer text-center">
+    <div id="bottom-inner">
+      
+        <a href="http://hexo.io" target="_blank" class="footer-link">Hexo</a>
+      
+        <a href="https://github.com/microacup/hexo-theme-micorb" target="_blank" class="footer-link">Theme microb</a>
+      
+    </div>
+  </footer>
+  
+
+<script>
+  // var titleTime,originTitle=document.title;document.addEventListener("visibilitychange",function(){document.hidden?(document.title="[闷声发大财中...] "+originTitle,clearTimeout(titleTime)):(document.title="[+1s] "+originTitle,titleTime=setTimeout(function(){document.title=originTitle},2e3))});
+</script>
+
+<script>
+  // (function (window, document) {
+  //   window.requestAnimationFrame = (function () {
+  //     return window.requestAnimationFrame ||
+  //       window.webkitRequestAnimationFrame ||
+  //       window.mozRequestAnimationFrame ||
+  //       window.oRequestAnimationFrame ||
+  //       window.msRequestAnimationFrame ||
+  //       function (callback) {
+  //         setTimeout(callback, 1000 / 60);
+  //       }
+  //   })();
+
+  //   function init() {
+  //     addMenuEvent();
+  //   }
+  //   init();
+
+  //   function addMenuEvent() {
+  //     var menu = document.getElementById('menu-main-post');
+  //     if (menu) {
+  //       var toc = document.getElementById('toc');
+  //       menu.title = toc ? '目录' : '回到顶部';
+  //       menu.onclick = function () {
+  //         if (toc) {
+  //           if (toc.style.display == 'block') {
+  //             toc.style.display = 'none';
+  //           } else {
+  //             toc.style.display = 'block';
+  //           }
+  //         } else {
+  //           returnTop();
+  //         }
+  //       };
+  //     }
+  //   }
+
+  //   var timer = null;
+
+  //   function returnTop() {
+  //     cancelAnimationFrame(timer);
+  //     timer = requestAnimationFrame(function fn() {
+  //       var oTop = document.body.scrollTop || document.documentElement.scrollTop;
+  //       if (oTop > 0) {
+  //         document.body.scrollTop = document.documentElement.scrollTop = oTop - 50;
+  //         timer = requestAnimationFrame(fn);
+  //       } else {
+  //         cancelAnimationFrame(timer);
+  //       }
+  //     });
+  //   }
+
+  // })(window, document);
+</script>
+
+
+  
+
+
+
+</body>
+</html>
