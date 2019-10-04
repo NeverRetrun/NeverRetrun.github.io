@@ -1,0 +1,224 @@
+
+<!DOCTYPE html>
+<html lang="">
+
+
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="theme-color" content="#202020">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  
+    <meta name="keywords" content>
+  
+
+  
+    <meta name="description" content="源码解析-Hyperf框架">
+  
+  
+  <link rel="icon" type="image/x-icon" href="/logo.png">
+  <title>源码解析-Hyperf框架 [ Void ]</title>
+  
+    <!-- stylesheets list from config.yml -->
+    
+      <link rel="stylesheet" href="//cdn.bootcss.com/pure/1.0.0/pure-min.css">
+    
+      <link rel="stylesheet" href="/css/microb.css">
+    
+      <link rel="stylesheet" href="/css/iconfont.css">
+    
+  
+</head>
+
+<body>
+  <nav class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
+  <!-- <ul class="pure-menu-list float-r clearfix">
+    
+      <li class="pure-menu-item toc-menu">
+        <a id="menu-main-post" class="pure-menu-link" href="javascript:;">
+          <img class="menu-icon" src="/logo.png" alt="MENU">
+        </a>
+      </li>
+    
+  </ul>   -->
+  <a class="pure-menu-heading" href="/">
+      <h1 class="title">Void</h1>
+      <!-- <span>一个后端程序员</span> -->
+  </a>
+
+  <a href="/about" class="pure-menu-item pure-menu-has-children">
+    <h2 class="subtitle">about</h2>
+  </a>
+
+  <!-- 
+  <img class="logo" id="logo" src="/logo.png" alt="logo">
+   -->
+</nav>
+
+  <div class="container" id="content-outer">
+    <div class="inner" id="content-inner">
+      <article class="post" id="post">
+  <header class="post-header text-center">
+    <h1 class="title">
+      源码解析-Hyperf框架
+    </h1>
+    
+    <time class="time" datetime="2019-10-04T00:13:59.000Z">
+      2019-10-04
+    </time>
+    
+    <hr>
+  </header>
+  <div class="post-content">
+    <p>Hyperf 源码解析</p>
+<hr>
+<p>Hyperf是疑似Swoole官方推的框架。为什么说疑似呢，因为它框架并没有用这点宣传，只是在Swoole微课程中有Hyperf的教学。</p>
+<p>我之前在公司已经看到OnRequest了，到那里还没看完，现在继续看一遍。真的很长，做好心理准备。</p>
+<p>创建项目 （<a href="https://doc.hyperf.io/#/zh/quick-start/install" target="_blank" rel="noopener">文档</a>）： </p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment">#我已经有Swoole环境，如果没有请按文档dockerfile进行构建环境</span></span><br><span class="line">composer create-project hyperf/hyperf-skeleton <span class="built_in">test</span>-hyperf</span><br></pre></td></tr></table></figure>
+<p>下面是我禁用swoole短名称遇到的问题。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment">#第一次我禁用swoole短名称时，ini_get_all识别不到 但是php -ini|grep swoole 中是有的</span></span><br><span class="line"><span class="built_in">echo</span> swoole.use_shortname = Off &gt;&gt; /usr/<span class="built_in">local</span>/etc/php/conf.d/docker-php-ext-swoole.ini </span><br><span class="line"><span class="comment">#这个才会被ini_get_all识别到</span></span><br><span class="line"><span class="built_in">echo</span> swoole.use_shortname = ‘Off’ &gt;&gt; /usr/<span class="built_in">local</span>/etc/php/conf.d/docker-php-ext-swoole.ini</span><br></pre></td></tr></table></figure>
+<p>输入<code>php bin/hyperf.php start</code>后访问<code>http://127.0.0.1:9501</code>显示如下，框架启动成功。</p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">	<span class="attr">"method"</span>: <span class="string">"GET"</span>,</span><br><span class="line">	<span class="attr">"message"</span>: <span class="string">"Hello Hyperf."</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>那我们所需要看的入口就是 <code>bin/hyperf.php</code> ，上面的语句是基础的设置。</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//显示PHP错误 与 PHP启动错误</span></span><br><span class="line">ini_set(<span class="string">'display_errors'</span>, <span class="string">'on'</span>);</span><br><span class="line">ini_set(<span class="string">'display_startup_errors'</span>, <span class="string">'on'</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">//所有错误类型均报告</span></span><br><span class="line">error_reporting(E_ALL);</span><br><span class="line"><span class="comment">//设置时区</span></span><br><span class="line">date_default_timezone_set(<span class="string">'Asia/Shanghai'</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">//设置框架基础路径</span></span><br><span class="line">! defined(<span class="string">'BASE_PATH'</span>) &amp;&amp; define(<span class="string">'BASE_PATH'</span>, dirname(<span class="keyword">__DIR__</span>, <span class="number">1</span>));</span><br><span class="line"></span><br><span class="line"><span class="comment">//加载composer 自动加载</span></span><br><span class="line"><span class="keyword">require</span> BASE_PATH . <span class="string">'/vendor/autoload.php'</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Self-called anonymous function that creates its own scope and keep the global namespace clean.</span></span><br><span class="line">(<span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">/** <span class="doctag">@var</span> \Psr\Container\ContainerInterface $container */</span></span><br><span class="line">    $container = <span class="keyword">require</span> BASE_PATH . <span class="string">'/config/container.php'</span>;</span><br><span class="line">    $application = $container-&gt;get(\Hyperf\Contract\ApplicationInterface::class);</span><br><span class="line">    $application-&gt;run();</span><br><span class="line">&#125;)();</span><br></pre></td></tr></table></figure>
+<p>我们下面主要进入 <code>BASE_PATH . &#39;/config/container.php&#39;</code>这个文件中看。</p>
+<p>代码很短，我直接贴出来然后一句句解释</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">$configFromProviders = ProviderConfig::load();</span><br><span class="line">$definitions = <span class="keyword">include</span> <span class="keyword">__DIR__</span> . <span class="string">'/dependencies.php'</span>;</span><br><span class="line">$serverDependencies = array_replace($configFromProviders[<span class="string">'dependencies'</span>] ?? [], $definitions[<span class="string">'dependencies'</span>] ?? []);</span><br><span class="line"></span><br><span class="line">$annotations = <span class="keyword">include</span> <span class="keyword">__DIR__</span> . <span class="string">'/autoload/annotations.php'</span>;</span><br><span class="line">$scanDirs = $configFromProviders[<span class="string">'scan'</span>][<span class="string">'paths'</span>];</span><br><span class="line">$scanDirs = array_merge($scanDirs, $annotations[<span class="string">'scan'</span>][<span class="string">'paths'</span>] ?? []);</span><br><span class="line"></span><br><span class="line">$ignoreAnnotations = $annotations[<span class="string">'scan'</span>][<span class="string">'ignore_annotations'</span>] ?? [<span class="string">'mixin'</span>];</span><br><span class="line">$container = <span class="keyword">new</span> Container(<span class="keyword">new</span> DefinitionSource($serverDependencies, $scanDirs, <span class="keyword">new</span> Scanner($ignoreAnnotations)));</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (! $container <span class="keyword">instanceof</span> \Psr\Container\ContainerInterface) &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(<span class="string">'The dependency injection container is invalid.'</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">return</span> ApplicationContext::setContainer($container);</span><br></pre></td></tr></table></figure>
+<p>首先 <code>ProviderConfig::load();</code> 就是加载了hyperf组件的配置类。hyperf组件在<code>composer.lock</code>中的json信息是这样的。它有个<code>extra</code>字段，里面还会有<code>hyperf</code>字段。</p>
+<figure class="highlight"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">            <span class="attr">"name"</span>: <span class="string">"hyperf/config"</span>,</span><br><span class="line">            ...</span><br><span class="line">            "extra": &#123;</span><br><span class="line">                "branch-alias": &#123;</span><br><span class="line">                    "dev-master": "1.0-dev"</span><br><span class="line">                &#125;,</span><br><span class="line">                "hyperf": &#123;</span><br><span class="line">                    "config": "Hyperf\\Config\\ConfigProvider"</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;,</span><br><span class="line">  					...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>里面做的事情就是拿到所有hyperf组件中的<code>config</code>字段中的<strong>类</strong>，然后进行统一调用__invoke()</p>
+<p>伪代码大概是这样的</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="comment">//解析composer.lock</span></span><br><span class="line">$composerLock = json_decode(file_get_contents(<span class="string">'compsoer.lock'</span>),<span class="keyword">true</span>);</span><br><span class="line">$extraArr = []</span><br><span class="line"><span class="keyword">foreach</span> ($composerLock[<span class="string">'packages'</span>] <span class="keyword">as</span> $key =&gt; $value) &#123;</span><br><span class="line">  $packName = $key == <span class="string">'name'</span> ? $value : <span class="string">''</span>;</span><br><span class="line">  <span class="keyword">if</span> ($key == <span class="string">'extra'</span>) &#123;</span><br><span class="line">    $extraArr[$packName] = $value;  </span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//下面是Hyperf的部分源代码</span></span><br><span class="line"><span class="keyword">foreach</span> ($extraArr ?? [] <span class="keyword">as</span> $project =&gt; $config) &#123;</span><br><span class="line">    <span class="keyword">foreach</span> ($config ?? [] <span class="keyword">as</span> $configKey =&gt; $item) &#123;</span><br><span class="line">        <span class="keyword">if</span> ($key === $configKey &amp;&amp; $item) &#123;</span><br><span class="line">            <span class="keyword">foreach</span> ($item ?? [] <span class="keyword">as</span> $k =&gt; $v) &#123;</span><br><span class="line">                <span class="keyword">if</span> (is_array($v)) &#123;</span><br><span class="line">                    $extra[$k] = array_merge($extra[$k] ?? [], $v);</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    $extra[$k][] = $v;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//最后进行调用</span></span><br><span class="line"><span class="keyword">foreach</span> ($extra <span class="keyword">as</span> $provider) &#123;</span><br><span class="line">  $providerConfigs[] = (<span class="keyword">new</span> $provider())();</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">return</span> $providerConfigs</span><br></pre></td></tr></table></figure>
+<p>这里<code>(new $provider())()</code>返回的值基本是以下这样的</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ConfigProvider</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">		<span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__invoke</span><span class="params">()</span>: <span class="title">array</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> [</span><br><span class="line">     				<span class="comment">#如果需要在容器中make(ConfigInterface::class),那么后面这个类的__invoke会被调用</span></span><br><span class="line">            <span class="string">'dependencies'</span> =&gt; [</span><br><span class="line">                ConfigInterface::class =&gt; ConfigFactory::class,</span><br><span class="line">            ],</span><br><span class="line">          	<span class="comment">#这个值主要用来控制后面解析注解时，扫描的路径</span></span><br><span class="line">            <span class="string">'scan'</span> =&gt; [</span><br><span class="line">                <span class="string">'paths'</span> =&gt; [</span><br><span class="line">                    <span class="keyword">__DIR__</span>,</span><br><span class="line">                ],</span><br><span class="line">            ],</span><br><span class="line">        ];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>前面的方法基本是这样</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="comment">#加载组件依赖 和 注解扫描的目录</span></span><br><span class="line">$configFromProviders = ProviderConfig::load();</span><br><span class="line">$definitions = <span class="keyword">include</span> <span class="keyword">__DIR__</span> . <span class="string">'/dependencies.php'</span>;</span><br><span class="line"><span class="comment">#合并配置中的依赖</span></span><br><span class="line">$serverDependencies = array_replace($configFromProviders[<span class="string">'dependencies'</span>] ?? [], $definitions[<span class="string">'dependencies'</span>] ?? []);</span><br><span class="line"></span><br><span class="line"><span class="comment">#获取注解目录</span></span><br><span class="line">$annotations = <span class="keyword">include</span> <span class="keyword">__DIR__</span> . <span class="string">'/autoload/annotations.php'</span>;</span><br><span class="line"><span class="comment">#获取最上面解析出来的注解扫描目录</span></span><br><span class="line">$scanDirs = $configFromProviders[<span class="string">'scan'</span>][<span class="string">'paths'</span>];</span><br><span class="line">$scanDirs = array_merge($scanDirs, $annotations[<span class="string">'scan'</span>][<span class="string">'paths'</span>] ?? []);</span><br><span class="line">$ignoreAnnotations = $annotations[<span class="string">'scan'</span>][<span class="string">'ignore_annotations'</span>] ?? [<span class="string">'mixin'</span>];</span><br></pre></td></tr></table></figure>
+<p>紧接着最重要的一句</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="comment">#这里主要做了将依赖注入到容器中， 然后扫描之前目录中的所有文件，拿到注解。</span></span><br><span class="line"><span class="comment">#这里是利用Symfony\Finder组件扫描文件</span></span><br><span class="line"><span class="comment">#利用Symfony的Doctrine\Annotations做注解解析</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#这里挺复杂的 大家需要自己看</span></span><br><span class="line">$container = <span class="keyword">new</span> Container(</span><br><span class="line">    <span class="keyword">new</span> DefinitionSource(</span><br><span class="line">        $serverDependencies, </span><br><span class="line">        $scanDirs, </span><br><span class="line">        <span class="keyword">new</span> Scanner($ignoreAnnotations)</span><br><span class="line">    )</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<p>这里的容器写的，反正我看的是很累，大致思路是这样的。</p>
+<p>（如果要看这个框架的代码，这个容器的实现一定要去看。）</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">(<span class="keyword">new</span> Container)-&gt;get(<span class="string">'SomethingFactory'</span>); </span><br><span class="line"><span class="comment">#如果容器中没有这个实体会调用下面这个方法</span></span><br><span class="line">(<span class="keyword">new</span> Container)-&gt;make(<span class="string">'SomethingFactory'</span>);</span><br><span class="line"><span class="comment">#在make中 </span></span><br><span class="line"><span class="comment">#如果make的参数是一个类 具有__invoke()会被封装成 FactoryDefinition</span></span><br><span class="line"><span class="comment">#如果make的参数是一个类 不具有__invoke()会被封装成 ObjectDefinition</span></span><br><span class="line"><span class="comment">#然后在make会根据类型 大概是这样</span></span><br><span class="line">swich(<span class="keyword">true</span>) &#123;</span><br><span class="line">  <span class="keyword">case</span> $definition <span class="keyword">instanceof</span> ObjectDefinition:</span><br><span class="line">  	<span class="keyword">return</span> <span class="comment">#object的实例</span></span><br><span class="line">  <span class="keyword">case</span> $definition <span class="keyword">instanceof</span> FactoryDefinition:</span><br><span class="line">  	<span class="keyword">return</span> <span class="comment">#会调用工厂的__invoke()方法 return出一个实例</span></span><br><span class="line">  <span class="keyword">default</span>:</span><br><span class="line">  	<span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后构建完容器后，我们剩下的只有2句话了。这里<code>$container-&gt;get(\Hyperf\Contract\ApplicationInterface::class);</code>根据依赖拿到的是<code>ApplicationFactory</code>这个类，调用这个类的<code>__invoke</code>这个方法，最后拿到的是Symfony的<code>\Symfony\Component\Console\Application</code>这个类。</p>
+<p>大致思路是这样的。调用<code>(new ApplicationFactory)()</code>在<code>__invoke</code>拼装出一个<code>Application</code>类。</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">* <span class="doctag">@var</span> \Hyperf\Framework\ApplicationFactory</span></span><br><span class="line"><span class="comment">* <span class="doctag">@var</span> \Symfony\Component\Console\Application</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line">$application = $container-&gt;get(\Hyperf\Contract\ApplicationInterface::class);</span><br><span class="line">$application-&gt;run();</span><br></pre></td></tr></table></figure>
+<p>然后我们进入<code>\Hyperf\Framework\ApplicationFactory</code>类中</p>
+<p>代码我就不全贴出来了。刚开始有段代码是这样的。<code>dispatch</code>这个方法之前看过，主要是调用依赖类中的<code>process</code>方法，但我不太明白这里到底做了什么。好像是完成配置的切片，没仔细看。</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> ($container-&gt;has(EventDispatcherInterface::class)) &#123;</span><br><span class="line">    $eventDispatcher = $container-&gt;get(EventDispatcherInterface::class);</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">    * <span class="doctag">@var</span> \Hyperf\Di\Listener\BootApplicationListener</span></span><br><span class="line"><span class="comment">    * <span class="doctag">@method</span> process</span></span><br><span class="line"><span class="comment">    */</span></span><br><span class="line">    $eventDispatcher-&gt;dispatch(<span class="keyword">new</span> BootApplication());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>下面的核心代码就是完成这样的动作了<code>$application-&gt;add($container-&gt;get($command));</code></p>
+<p>然后我们最后再看下<code>start</code>这个命令。我们进入<code>\Hyperf\Server\Command\StartServer</code>这个类。核心代码就是下面这段。</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">protected</span> <span class="function"><span class="keyword">function</span> <span class="title">execute</span><span class="params">(InputInterface $input, OutputInterface $output)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">//启用协程的IO hook</span></span><br><span class="line">    \Swoole\Runtime::enableCoroutine(<span class="keyword">true</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//判断环境中是否关闭了协程短标签</span></span><br><span class="line">    <span class="keyword">$this</span>-&gt;checkEnvironment($output);</span><br><span class="line">    </span><br><span class="line">  	<span class="comment">/**</span></span><br><span class="line"><span class="comment">  	* 注册sever</span></span><br><span class="line"><span class="comment">  	* <span class="doctag">@var</span> \Hyperf\Server\Server</span></span><br><span class="line"><span class="comment">  	*/</span></span><br><span class="line">    $serverFactory = <span class="keyword">$this</span>-&gt;container-&gt;get(ServerFactory::class)</span><br><span class="line">        -&gt;setEventDispatcher(<span class="keyword">$this</span>-&gt;container-&gt;get(EventDispatcherInterface::class))</span><br><span class="line">        -&gt;setLogger(<span class="keyword">$this</span>-&gt;container-&gt;get(StdoutLoggerInterface::class));</span><br><span class="line"></span><br><span class="line">    $serverConfig = <span class="keyword">$this</span>-&gt;container-&gt;get(ConfigInterface::class)-&gt;get(<span class="string">'server'</span>, []);</span><br><span class="line">    <span class="keyword">if</span> (! $serverConfig) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> \InvalidArgumentException(<span class="string">'At least one server should be defined.'</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    $serverFactory-&gt;configure($serverConfig);</span><br><span class="line">    $serverFactory-&gt;start();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们再深入，比较核心的就是<code>\Hyperf\Server\Server</code>中的<code>initServers</code>方法。在这里注册服务，注册监听回调的方法。各种事件监听的类，在<code>config/autolaod/server.php</code>中有注册。</p>
+<p>然后各种组件不就看了，代码量太多了。</p>
+
+
+    <!-- 显示photos -->
+    
+
+  </div>
+  <div class="post-tags">
+    
+  </div>
+</article>
+  
+    <div class="post-nav">
+      <div class="post-nav-item post-nav-next">
+        
+          <a href="/2019/09/23/关于商品超卖方案压测/" rel="next" title="关于商品超卖方案压测">
+            <span>〈 </span> 关于商品超卖方案压测
+          </a>
+        
+      </div>
+  
+      <div class="post-nav-item post-nav-prev">
+        
+      </div>
+    </div>
+  
+
+
+
+    </div>
+
+    
+
+  </div>
+
+  <footer class="footer text-center">
+    <div id="bottom-inner">
+      
+        <a href="http://hexo.io" target="_blank" class="footer-link">Hexo</a>
+      
+        <a href="https://github.com/microacup/hexo-theme-micorb" target="_blank" class="footer-link">Theme microb</a>
+      
+    </div>
+  </footer>
+  
+
+<script>
+  // var titleTime,originTitle=document.title;document.addEventListener("visibilitychange",function(){document.hidden?(document.title="[闷声发大财中...] "+originTitle,clearTimeout(titleTime)):(document.title="[+1s] "+originTitle,titleTime=setTimeout(function(){document.title=originTitle},2e3))});
+</script>
+
+<script>
+  // (function (window, document) {
+  //   window.requestAnimationFrame = (function () {
+  //     return window.requestAnimationFrame ||
+  //       window.webkitRequestAnimationFrame ||
+  //       window.mozRequestAnimationFrame ||
+  //       window.oRequestAnimationFrame ||
+  //       window.msRequestAnimationFrame ||
+  //       function (callback) {
+  //         setTimeout(callback, 1000 / 60);
+  //       }
+  //   })();
+
+  //   function init() {
+  //     addMenuEvent();
+  //   }
+  //   init();
+
+  //   function addMenuEvent() {
+  //     var menu = document.getElementById('menu-main-post');
+  //     if (menu) {
+  //       var toc = document.getElementById('toc');
+  //       menu.title = toc ? '目录' : '回到顶部';
+  //       menu.onclick = function () {
+  //         if (toc) {
+  //           if (toc.style.display == 'block') {
+  //             toc.style.display = 'none';
+  //           } else {
+  //             toc.style.display = 'block';
+  //           }
+  //         } else {
+  //           returnTop();
+  //         }
+  //       };
+  //     }
+  //   }
+
+  //   var timer = null;
+
+  //   function returnTop() {
+  //     cancelAnimationFrame(timer);
+  //     timer = requestAnimationFrame(function fn() {
+  //       var oTop = document.body.scrollTop || document.documentElement.scrollTop;
+  //       if (oTop > 0) {
+  //         document.body.scrollTop = document.documentElement.scrollTop = oTop - 50;
+  //         timer = requestAnimationFrame(fn);
+  //       } else {
+  //         cancelAnimationFrame(timer);
+  //       }
+  //     });
+  //   }
+
+  // })(window, document);
+</script>
+
+
+  
+
+
+
+</body>
+</html>
