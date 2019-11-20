@@ -1,0 +1,197 @@
+
+<!DOCTYPE html>
+<html lang="">
+
+
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="theme-color" content="#202020">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  
+    <meta name="keywords" content>
+  
+
+  
+    <meta name="description" content="thinkphp-pipelin">
+  
+  
+  <link rel="icon" type="image/x-icon" href="/logo.png">
+  <title>thinkphp-pipelin [ Void ]</title>
+  
+    <!-- stylesheets list from config.yml -->
+    
+      <link rel="stylesheet" href="//cdn.bootcss.com/pure/1.0.0/pure-min.css">
+    
+      <link rel="stylesheet" href="/css/microb.css">
+    
+      <link rel="stylesheet" href="/css/iconfont.css">
+    
+  
+</head>
+
+<body>
+  <nav class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
+  <!-- <ul class="pure-menu-list float-r clearfix">
+    
+      <li class="pure-menu-item toc-menu">
+        <a id="menu-main-post" class="pure-menu-link" href="javascript:;">
+          <img class="menu-icon" src="/logo.png" alt="MENU">
+        </a>
+      </li>
+    
+  </ul>   -->
+  <a class="pure-menu-heading" href="/">
+      <h1 class="title">Void</h1>
+      <!-- <span>一个后端程序员</span> -->
+  </a>
+
+  <a href="/about" class="pure-menu-item pure-menu-has-children">
+    <h2 class="subtitle">about</h2>
+  </a>
+
+  <!-- 
+  <img class="logo" id="logo" src="/logo.png" alt="logo">
+   -->
+</nav>
+
+  <div class="container" id="content-outer">
+    <div class="inner" id="content-inner">
+      <article class="post" id="post">
+  <header class="post-header text-center">
+    <h1 class="title">
+      thinkphp-pipelin
+    </h1>
+    
+    <time class="time" datetime="2019-11-20T12:05:39.000Z">
+      2019-11-20
+    </time>
+    
+    <hr>
+  </header>
+  <div class="post-content">
+    <p>ThinkPHP6.0中的 Pipeline 类</p>
+<hr>
+<p>ThinkPHP6.0中的中间件通过Pipeline 这个类实现。</p>
+<blockquote>
+<p>Pipeline类 位于 topthink/framework/src/think/Pipeline.php</p>
+</blockquote>
+<p>这个类很有意思，主要是<code>array_reduce</code>这个函数的巧用。我们先看下ThinkPHP中的<code>Middleware</code>的调用方法</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 这段代码位于 topthink/framework/src/think/Http.php 200行左右的位置</span></span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">$this</span>-&gt;app-&gt;middleware-&gt;pipeline() <span class="comment">//这里的pipeline实际是吐了一个(new Pipeline())-&gt;through(...)</span></span><br><span class="line">          -&gt;send($request)</span><br><span class="line">          -&gt;then(<span class="function"><span class="keyword">function</span> <span class="params">($request)</span> </span>&#123;</span><br><span class="line">              <span class="keyword">return</span> <span class="keyword">$this</span>-&gt;dispatchToRoute($request);</span><br><span class="line">          &#125;);</span><br></pre></td></tr></table></figure>
+<p>我们把上面的代码中pipeline()方法中的代码拉出来大概是这样的，<strong>大家不要害怕下面这么多的代码量</strong>，理解代码的作用就行，不用理解具体实现。我们具体讲的也不是这个例子。<br><figure class="highlight php"><table><tr><td class="code"><pre><span class="line">(<span class="keyword">new</span> Pipeline())</span><br><span class="line">          -&gt;through(array_map(<span class="function"><span class="keyword">function</span> <span class="params">($middleware)</span> </span>&#123;</span><br><span class="line">           <span class="comment">//这里是把中间件封装成一个个闭包</span></span><br><span class="line">              <span class="keyword">return</span> <span class="function"><span class="keyword">function</span> <span class="params">($request, $next)</span> <span class="title">use</span> <span class="params">($middleware)</span> </span>&#123;</span><br><span class="line">                  <span class="keyword">list</span>($call, $param) = $middleware;</span><br><span class="line">                  <span class="keyword">if</span> (is_array($call) &amp;&amp; is_string($call[<span class="number">0</span>])) &#123;</span><br><span class="line">                      $call = [<span class="keyword">$this</span>-&gt;app-&gt;make($call[<span class="number">0</span>]), $call[<span class="number">1</span>]];</span><br><span class="line">                  &#125;</span><br><span class="line">                  $response = call_user_func($call, $request, $next, $param);</span><br><span class="line"></span><br><span class="line">                  <span class="keyword">if</span> (!$response <span class="keyword">instanceof</span> Response) &#123;</span><br><span class="line">                      <span class="keyword">throw</span> <span class="keyword">new</span> LogicException(<span class="string">'The middleware must return Response instance'</span>);</span><br><span class="line">                  &#125;</span><br><span class="line">                  <span class="keyword">return</span> $response;</span><br><span class="line">              &#125;;</span><br><span class="line">          &#125;, <span class="keyword">$this</span>-&gt;sortMiddleware(<span class="keyword">$this</span>-&gt;queue[$type] ?? []))) <span class="comment">//这里把中间件排个序</span></span><br><span class="line">          -&gt;whenException([<span class="keyword">$this</span>, <span class="string">'handleException'</span>]); <span class="comment">// 这里设置个错误处理</span></span><br><span class="line">          -&gt;send($request) <span class="comment">//这里设置最初始的值，后面细说</span></span><br><span class="line">          -&gt;then(<span class="function"><span class="keyword">function</span> <span class="params">($request)</span> </span>&#123;</span><br><span class="line">              <span class="keyword">return</span> <span class="keyword">$this</span>-&gt;dispatchToRoute($request); </span><br><span class="line">          &#125;);</span><br></pre></td></tr></table></figure></p>
+<p>说实话我看的很懵逼，一层层嵌套。后面我仔细看了<a href="https://www.php.net/manual/zh/function.array-reduce.php" target="_blank" rel="noopener">array_reduce的文档</a>，后面发现下面有具体的例子。以下的代码就是官方有人贡献的例子，几乎与ThinkPHP的源码一致。如果修改参数名后会更加容易理解代码。<br><figure class="highlight php"><table><tr><td class="code"><pre><span class="line">The first parameter $array can be also be functions, which produces very interesting <span class="keyword">and</span> powerful result, which can be used to make an union of middlewares.</span><br><span class="line"></span><br><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"></span><br><span class="line">$f1 = <span class="function"><span class="keyword">function</span><span class="params">($x, $f)</span></span>&#123;</span><br><span class="line">    <span class="keyword">echo</span> <span class="string">'middleware 1 begin.'</span>.PHP_EOL;</span><br><span class="line">    $x += <span class="number">1</span>;</span><br><span class="line">    $x = $f($x);</span><br><span class="line">    <span class="keyword">echo</span> <span class="string">'middleware 1 end.'</span>.PHP_EOL;</span><br><span class="line">    <span class="keyword">return</span> $x;   </span><br><span class="line">&#125;;</span><br><span class="line">   </span><br><span class="line"></span><br><span class="line">$f2 = <span class="function"><span class="keyword">function</span><span class="params">($x, $f)</span></span>&#123;</span><br><span class="line">    <span class="keyword">echo</span> <span class="string">'middleware 2 begin: '</span>.PHP_EOL;</span><br><span class="line">    $x += <span class="number">2</span>;</span><br><span class="line">    $x = $f($x);</span><br><span class="line">    <span class="keyword">echo</span> <span class="string">'middleware 2 end.'</span>.PHP_EOL;</span><br><span class="line">    <span class="keyword">return</span> $x;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">$respond = <span class="function"><span class="keyword">function</span><span class="params">($x)</span></span>&#123;</span><br><span class="line">    <span class="keyword">echo</span> <span class="string">'Generate some response.'</span>.PHP_EOL;</span><br><span class="line">    <span class="keyword">return</span> $x;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">$middlewares = [$f1, $f2];</span><br><span class="line">$initial = $respond;</span><br><span class="line">$foo = array_reduce($middlewares, <span class="function"><span class="keyword">function</span><span class="params">($stack, $item)</span></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="function"><span class="keyword">function</span><span class="params">($request)</span> <span class="title">use</span> <span class="params">($stack, $item)</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> $item($request, $stack);</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;, $initial);</span><br><span class="line"></span><br><span class="line">$x = <span class="number">1</span>;</span><br><span class="line"><span class="keyword">echo</span> $foo($x);</span><br><span class="line"></span><br><span class="line"><span class="meta">?&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//output:</span></span><br><span class="line">middleware <span class="number">2</span> begin:</span><br><span class="line">middleware <span class="number">1</span> begin.</span><br><span class="line">Generate some response.</span><br><span class="line">middleware <span class="number">1</span> end.</span><br><span class="line">middleware <span class="number">2</span> end.</span><br><span class="line"><span class="number">4</span></span><br></pre></td></tr></table></figure></p>
+<p>以下是我修改参数名的结果，更容易理解代码<br><figure class="highlight php"><table><tr><td class="code"><pre><span class="line">$function1 = <span class="function"><span class="keyword">function</span> <span class="params">($request, $nextFunction)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">echo</span> <span class="string">'middleware 1 begin.'</span> . PHP_EOL;</span><br><span class="line">    $request += <span class="number">1</span>;</span><br><span class="line">    $request = $nextFunction($request);</span><br><span class="line">    <span class="keyword">echo</span> <span class="string">'middleware 1 end.'</span> . PHP_EOL;</span><br><span class="line">    <span class="keyword">return</span> $request;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">$function2 = <span class="function"><span class="keyword">function</span> <span class="params">($request, $nextFunction)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">echo</span> <span class="string">'middleware 2 begin: '</span> . PHP_EOL;</span><br><span class="line">    $request += <span class="number">2</span>;</span><br><span class="line">    $request = $nextFunction($request);</span><br><span class="line">    <span class="keyword">echo</span> <span class="string">'middleware 2 end.'</span> . PHP_EOL;</span><br><span class="line">    <span class="keyword">return</span> $request;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">$respond = <span class="function"><span class="keyword">function</span> <span class="params">($request)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">echo</span> <span class="string">'Generate some response.'</span> . PHP_EOL;</span><br><span class="line">    <span class="keyword">return</span> $request;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">$middlewares = [$function1, $function2];</span><br><span class="line">$initial = $respond;</span><br><span class="line"></span><br><span class="line"><span class="comment">//$stack 是上次封装的值 $item是当前循环到的方法</span></span><br><span class="line">$foo = array_reduce($middlewares, <span class="function"><span class="keyword">function</span> <span class="params">($stack, $item)</span> </span>&#123;</span><br><span class="line">	<span class="comment">//这里封装到方法套方法</span></span><br><span class="line">    <span class="keyword">return</span> <span class="function"><span class="keyword">function</span> <span class="params">($request)</span> <span class="title">use</span> <span class="params">($stack, $item)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> $item($request, $stack);</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;, $initial);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">$request = <span class="number">1</span>;</span><br><span class="line"><span class="keyword">echo</span> $foo($request);</span><br></pre></td></tr></table></figure></p>
+<p>我们可以拆解一下这里的<code>array_reduce</code>方法，在官网中的有PHP代码的<code>array_reduce</code>的实现，大概是以下这个样子<br><figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">array_reduce</span><span class="params">($array, $callback, $initial=null)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    $acc = $initial;</span><br><span class="line">    <span class="keyword">foreach</span>($array <span class="keyword">as</span> $a)</span><br><span class="line">        $acc = $callback($acc, $a);</span><br><span class="line">    <span class="keyword">return</span> $acc;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//所以第一次嵌套循环的代码大概是这样的</span></span><br><span class="line">$function1 = <span class="function"><span class="keyword">function</span> <span class="params">($request, $nextFunction)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">echo</span> <span class="string">'middleware 1 begin.'</span> . PHP_EOL;</span><br><span class="line">    $request += <span class="number">1</span>;</span><br><span class="line">    $request = $nextFunction($request);</span><br><span class="line">    <span class="keyword">echo</span> <span class="string">'middleware 1 end.'</span> . PHP_EOL;</span><br><span class="line">    <span class="keyword">return</span> $request;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">$respond = <span class="function"><span class="keyword">function</span> <span class="params">($request)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">echo</span> <span class="string">'Generate some response.'</span> . PHP_EOL;</span><br><span class="line">    <span class="keyword">return</span> $request;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">$function1($request, $respond)</span><br><span class="line"></span><br><span class="line"><span class="comment">//拆解一下应该是这样的，拆解成现在这个样子大概清楚了。</span></span><br><span class="line"><span class="keyword">echo</span> <span class="string">'middleware 1 begin.'</span> . PHP_EOL;</span><br><span class="line">$request += <span class="number">1</span>;</span><br><span class="line">$request = <span class="function"><span class="keyword">function</span> <span class="params">($request)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">echo</span> <span class="string">'Generate some response.'</span> . PHP_EOL;</span><br><span class="line">    <span class="keyword">return</span> $request;</span><br><span class="line">&#125;($request);</span><br><span class="line"><span class="keyword">echo</span> <span class="string">'middleware 1 end.'</span> . PHP_EOL;</span><br><span class="line"><span class="keyword">return</span> $request;</span><br><span class="line"></span><br><span class="line"><span class="comment">//再去掉里面这个闭包 大概是这样的</span></span><br><span class="line"><span class="keyword">echo</span> <span class="string">'middleware 1 begin.'</span> . PHP_EOL;</span><br><span class="line">$request += <span class="number">1</span>;</span><br><span class="line"><span class="keyword">echo</span> <span class="string">'Generate some response.'</span> . PHP_EOL;</span><br><span class="line"><span class="keyword">echo</span> <span class="string">'middleware 1 end.'</span> . PHP_EOL;</span><br><span class="line"><span class="keyword">return</span> $request;</span><br><span class="line"></span><br><span class="line"><span class="comment">//如果我们再套一层function2的代码大概是这样的</span></span><br><span class="line"><span class="keyword">echo</span> <span class="string">'middleware 2 begin: '</span> . PHP_EOL;</span><br><span class="line">$request += <span class="number">2</span>;</span><br><span class="line"><span class="keyword">echo</span> <span class="string">'middleware 1 begin.'</span> . PHP_EOL;</span><br><span class="line">$request += <span class="number">1</span>;</span><br><span class="line"><span class="keyword">echo</span> <span class="string">'Generate some response.'</span> . PHP_EOL;</span><br><span class="line"><span class="keyword">echo</span> <span class="string">'middleware 1 end.'</span> . PHP_EOL;</span><br><span class="line"><span class="keyword">echo</span> <span class="string">'middleware 2 end.'</span> . PHP_EOL;</span><br><span class="line"><span class="keyword">return</span> $request;</span><br></pre></td></tr></table></figure></p>
+<p>即使最后拆解成最后这个模样，我还是不怎么懂这个闭包，就是有种似懂非懂的感觉。<br>我觉得这就是这种写法的缺陷。就是可读性极差，并且函数内部调用并没有像接口一样的东西来强制参数。<br>但是优点很明显就是可以写的很简略，简单。代码看上去非常的精炼。</p>
+
+
+    <!-- 显示photos -->
+    
+
+  </div>
+  <div class="post-tags">
+    
+  </div>
+</article>
+  
+    <div class="post-nav">
+      <div class="post-nav-item post-nav-next">
+        
+          <a href="/2019/10/04/源码解析-Hyperf框架/" rel="next" title="源码解析-Hyperf框架">
+            <span>〈 </span> 源码解析-Hyperf框架
+          </a>
+        
+      </div>
+  
+      <div class="post-nav-item post-nav-prev">
+        
+      </div>
+    </div>
+  
+
+
+
+    </div>
+
+    
+
+  </div>
+
+  <footer class="footer text-center">
+    <div id="bottom-inner">
+      
+        <a href="http://hexo.io" target="_blank" class="footer-link">Hexo</a>
+      
+        <a href="https://github.com/microacup/hexo-theme-micorb" target="_blank" class="footer-link">Theme microb</a>
+      
+    </div>
+  </footer>
+  
+
+<script>
+  // var titleTime,originTitle=document.title;document.addEventListener("visibilitychange",function(){document.hidden?(document.title="[闷声发大财中...] "+originTitle,clearTimeout(titleTime)):(document.title="[+1s] "+originTitle,titleTime=setTimeout(function(){document.title=originTitle},2e3))});
+</script>
+
+<script>
+  // (function (window, document) {
+  //   window.requestAnimationFrame = (function () {
+  //     return window.requestAnimationFrame ||
+  //       window.webkitRequestAnimationFrame ||
+  //       window.mozRequestAnimationFrame ||
+  //       window.oRequestAnimationFrame ||
+  //       window.msRequestAnimationFrame ||
+  //       function (callback) {
+  //         setTimeout(callback, 1000 / 60);
+  //       }
+  //   })();
+
+  //   function init() {
+  //     addMenuEvent();
+  //   }
+  //   init();
+
+  //   function addMenuEvent() {
+  //     var menu = document.getElementById('menu-main-post');
+  //     if (menu) {
+  //       var toc = document.getElementById('toc');
+  //       menu.title = toc ? '目录' : '回到顶部';
+  //       menu.onclick = function () {
+  //         if (toc) {
+  //           if (toc.style.display == 'block') {
+  //             toc.style.display = 'none';
+  //           } else {
+  //             toc.style.display = 'block';
+  //           }
+  //         } else {
+  //           returnTop();
+  //         }
+  //       };
+  //     }
+  //   }
+
+  //   var timer = null;
+
+  //   function returnTop() {
+  //     cancelAnimationFrame(timer);
+  //     timer = requestAnimationFrame(function fn() {
+  //       var oTop = document.body.scrollTop || document.documentElement.scrollTop;
+  //       if (oTop > 0) {
+  //         document.body.scrollTop = document.documentElement.scrollTop = oTop - 50;
+  //         timer = requestAnimationFrame(fn);
+  //       } else {
+  //         cancelAnimationFrame(timer);
+  //       }
+  //     });
+  //   }
+
+  // })(window, document);
+</script>
+
+
+  
+
+
+
+</body>
+</html>
