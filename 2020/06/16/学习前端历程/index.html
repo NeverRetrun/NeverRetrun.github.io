@@ -14,11 +14,11 @@
   
 
   
-    <meta name="description" content="关于order与limit">
+    <meta name="description" content="学习前端历程">
   
   
   <link rel="icon" type="image/x-icon" href="/logo.png">
-  <title>关于order与limit [ Void ]</title>
+  <title>学习前端历程 [ Void ]</title>
   
     <!-- stylesheets list from config.yml -->
     
@@ -61,38 +61,32 @@
       <article class="post" id="post">
   <header class="post-header text-center">
     <h1 class="title">
-      关于order与limit
+      学习前端历程
     </h1>
     
-    <time class="time" datetime="2020-01-24T01:42:48.000Z">
-      2020-01-24
+    <time class="time" datetime="2020-06-15T22:30:17.000Z">
+      2020-06-16
     </time>
     
     <hr>
   </header>
   <div class="post-content">
-    <p>  有天，我们经理突然问了我们分页都是怎么做的，我说就是用limit做的。后来讨论牵扯到他说那limit + order 应该是全表扫描后排序，在取前面limit的数据，那么limit+order的查询速度是比单单全表扫描是慢的。后来我否认了，因为我印象中limit是一定比单单全表快的，但我说不出个所以然来。所以我现在准备看下到底是怎么回事。</p>
-<p>  首先，我们的问题</p>
+    <p>  我在去年年末接触前端。本身之前在校学习过基础的HTML+CSS+JavsScript，后续一直没有实操。从去年年末我的前端技术栈一直发生变化，基本是开始运用从一开始的写原生 到 写<code>Vue</code> +<code>TypeScript</code> + <code>Sass</code>。</p>
 <blockquote>
-<p>加limit + order的速度是否比 不加limit + order 快 ？ 如果快，为什么快？</p>
+<p>首先不需要害怕任何新技术，所有的锤子都是给人用的。如果你不能容易学会，那就只能怪锤子难用</p>
 </blockquote>
-<p>首先我有个表，没有加任何索引，拥有4655条数据，我跑了以下的sql，sql下方是sql的运行时间。</p>
-<p><img src="https://i.loli.net/2020/01/24/GVS2gEq5BvDTOeI.png" alt="sql" style="zoom:50%;"></p>
-<p>根据上面的结论</p>
-<ol>
-<li>加了limit，一定比查询所有快。</li>
-<li>order 的正序与倒序无关速度。</li>
-<li>order + limit 会比单单limit慢。</li>
-</ol>
-<p>  对，这还不够。我不知道到底发生了什么。我们利用<code>Navicat</code>剖析查看一下具体速度。</p>
-<p><img src="https://i.loli.net/2020/01/24/CwMEuJBFRhvYiWS.png" alt="select * 速度" style="zoom:50%;"></p>
-<p><img src="https://i.loli.net/2020/01/24/AN2OdYBQK5l6UJ9.png" alt="limit sql速度" style="zoom:50%;"></p>
-<p>  这里我们发现了确实order+limit 比 单单select + order 要慢。但是这绝对不是造成差距的原因。这里查找的差距连0.001都没到。我们接着看status</p>
-<p><img src="https://i.loli.net/2020/01/24/v7yIo8qVOYWXNid.png" alt="select * status" style="zoom:40%;"></p>
-<p><img src="https://i.loli.net/2020/01/24/1a6mCn2TXEef35F.png" alt="order limit" style="zoom:40%;"></p>
-<p>  我们发现limit + order 确实进行了全表扫描，后面取了前面1000条。</p>
-<p>  在这里我还是没有特别准确的结论。仔细看上面的数据，你会发现只有Bytes_sent这个值差的比较多。这个是正常的，因为limit的原因，1000条的数据量肯定远远小于4646条的数据。然后就会发现他们好像就是差4倍多，然后运行速度也是差4倍多。</p>
-<p>  所以我这里的猜测就是，简单sql查询的运行速度，会大大受到查询数据量的影响。后来我想到毕竟数据库到程序内存中不是凭空出现，它还是需要一次I/O。</p>
+<p>  我的目标很清晰，对于前端工具，我只需要会用就行。我不需要深入特别多。类似于<code>webpack</code>，<code>babel</code>之类我还不会配，需要下很大功夫去深入。</p>
+<p>  先说一下现在前端开发是怎样的吧，这已经和普通后端开发的流程有点类似了。</p>
+<p>  首先你需要选择一门稍微热门的框架，类似于<code>Vue</code>，<code>React</code>。它们的脚手架就帮你做好大部分的事情，类似于PHP中的<code>composer create-project</code>。或许后面你还需要一门CSS预处理器类似<code>Sass</code>、<code>Less</code>之类，来复用CSS或者使用CSS变量。后面可能你还是不够满足，因为JS各种不确定的返回变量让你出现一些莫名其妙的BUG，可以在项目中加入<code>TypeScript</code>。到了最后项目编译阶段，你还需要配置<code>webpack</code>来编译哪些文件，需要配置<code>babel</code>来控制你代码的浏览器兼容，就像PHP项目中随处可见的<code>polyfill</code>来兼容PHP版本删除的函数。</p>
+<p>  JavaScript的包管理<code>npm</code>与<code>yarn</code>。<code>npm</code>是官方背书的，我在这种技术选择上面，完全没啥想法，打开直接<code>yarn site:v2ex.com</code>或者<code>npm site:v2ex.com</code>，感受一波从众的快乐。刚刚搜了一下在npm5之前是没有<code>.lock</code>文件的，而<code>yarn</code>有。现在npm6差距应该挺小了，但我没做过这方面测试。但是你只要用过包管理，都知道<code>.lock</code>文件意味这什么。</p>
+<p>  然后<code>Vue</code>技术栈还有2个组件包(这是我自己的叫法)。是<code>Vuex</code>与<code>Vue-Router</code>。</p>
+<p>  <code>Vuex</code>类似于PHP中一个单例的对象保存的数据。它的作用很明显，就是一份数据贯穿整个生命周期，用数据协同各个组件。</p>
+<p>  <code>Vue-Router</code>这就很明面意思了，就是一个<code>Vue</code>的路由管理。</p>
+<hr>
+<p>  在学习前端过程中，虽然我知道这些技术栈，但我没有一步到位。我是从写原生代码一步一步渐进到这些技术栈中。不过值得一提的是<code>Vue</code>对于<code>TypeScript</code>的官方支持很少，我不是很推荐<code>Vue</code>上<code>TypeScript</code>，因为中文资料很少，我基本都是在<code>stackflow</code>与各种组件的<code>github</code>页面徘徊，也没有一个特别细致详细的文档。</p>
+<p>  在我写前端的体验中，就很多网上的言论前端技术栈深深深。其实我觉得还好，给我的感觉就是前端开始复刻后端的技术栈，可能因为我现在还是纯写页面，我只是觉得它融入了很多很多的想法， <code>最后活成的后端模样</code>。</p>
+<p>  因为我现在个人认为还处于比较浅薄的状态，还不会写什么技术博客。</p>
+<p>  还是得说下，不要因为某些东西是个新名词就惧怕它，就像前端各种新概念，只不过是后端框架理念的再次包装而已。</p>
 
 
     <!-- 显示photos -->
@@ -107,17 +101,13 @@
     <div class="post-nav">
       <div class="post-nav-item post-nav-next">
         
-          <a href="/2019/11/20/thinkphp-pipelin/" rel="next" title="thinkphp-pipelin">
-            <span>〈 </span> thinkphp-pipelin
+          <a href="/2020/01/24/关于order与limit/" rel="next" title="关于order与limit">
+            <span>〈 </span> 关于order与limit
           </a>
         
       </div>
   
       <div class="post-nav-item post-nav-prev">
-        
-          <a href="/2020/06/16/学习前端历程/" rel="prev" title="学习前端历程">
-            学习前端历程 <span>〉</span>
-          </a>
         
       </div>
     </div>
