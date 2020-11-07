@@ -77,7 +77,8 @@
 <li><a href="#对联合索引的认识">对联合索引的认识</a></li>
 <li><a href="#对Oauth2的认识">对Oauth2的认识</a></li>
 <li><a href="#Redis集群中数据同步的细节">Redis集群中数据同步的细节</a></li>
-<li><a href="#`EasyWechat`协程为什么要替换`guzzle_handler`"><code>EasyWechat</code>协程为什么要替换<code>guzzle_handler</code></a></li>
+<li><a href="#EasyWechat协程为什么要替换guzzle_handler">EasyWechat协程为什么要替换guzzle_handler</a></li>
+<li><a href="#Redis和MySQL如何保持最终一致性">Redis和MySQL如何保持最终一致性</a></li>
 </ul>
 <h4 id="跨域中HTTP请求交互的细节"><a href="#跨域中HTTP请求交互的细节" class="headerlink" title="跨域中HTTP请求交互的细节"></a>跨域中HTTP请求交互的细节</h4><p>这里其实我知道，但是我可能当时根本没想到一点，后来洗头的时候灵感来了就想到是这个。</p>
 <p>跨域其实分简单请求和非简单请求，2种。一般要带自定义请求头都会是非简单请求，区别也很简单就是非简单请求会发送一个Options请求预检。服务器认可这个请求就对Options请求返回204，如果不认可就返回405。</p>
