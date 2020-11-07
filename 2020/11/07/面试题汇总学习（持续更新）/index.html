@@ -1,0 +1,245 @@
+
+<!DOCTYPE html>
+<html lang="">
+
+
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="theme-color" content="#202020">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  
+    <meta name="keywords" content>
+  
+
+  
+    <meta name="description" content="面试题汇总学习（持续更新）">
+  
+  
+  <link rel="icon" type="image/x-icon" href="/logo.png">
+  <title>面试题汇总学习（持续更新） [ Void ]</title>
+  
+    <!-- stylesheets list from config.yml -->
+    
+      <link rel="stylesheet" href="//cdn.bootcss.com/pure/1.0.0/pure-min.css">
+    
+      <link rel="stylesheet" href="/css/microb.css">
+    
+      <link rel="stylesheet" href="/css/iconfont.css">
+    
+  
+</head>
+
+<body>
+  <nav class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
+  <!-- <ul class="pure-menu-list float-r clearfix">
+    
+      <li class="pure-menu-item toc-menu">
+        <a id="menu-main-post" class="pure-menu-link" href="javascript:;">
+          <img class="menu-icon" src="/logo.png" alt="MENU">
+        </a>
+      </li>
+    
+  </ul>   -->
+  <a class="pure-menu-heading" href="/">
+      <h1 class="title">Void</h1>
+      <!-- <span>一个后端程序员</span> -->
+  </a>
+
+  <a href="/about" class="pure-menu-item pure-menu-has-children">
+    <h2 class="subtitle">about</h2>
+  </a>
+
+  <!-- 
+  <img class="logo" id="logo" src="/logo.png" alt="logo">
+   -->
+</nav>
+
+  <div class="container" id="content-outer">
+    <div class="inner" id="content-inner">
+      <article class="post" id="post">
+  <header class="post-header text-center">
+    <h1 class="title">
+      面试题汇总学习（持续更新）
+    </h1>
+    
+    <time class="time" datetime="2020-11-07T01:13:50.000Z">
+      2020-11-07
+    </time>
+    
+    <hr>
+  </header>
+  <div class="post-content">
+    <p>面试题汇总学习（持续更新）</p>
+<h4 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h4><ul>
+<li><a href="#跨域中HTTP请求交互细节">跨域中HTTP请求交互细节</a></li>
+<li><a href="#对联合索引的认识">对联合索引的认识</a></li>
+<li><a href="#对Oauth2的认识">对Oauth2的认识</a></li>
+<li><a href="#Redis集群中数据同步的细节">Redis集群中数据同步的细节</a></li>
+<li><a href="#`EasyWechat`协程为什么要替换`guzzle_handler`"><code>EasyWechat</code>协程为什么要替换<code>guzzle_handler</code></a></li>
+</ul>
+<h4 id="跨域中HTTP请求交互的细节"><a href="#跨域中HTTP请求交互的细节" class="headerlink" title="跨域中HTTP请求交互的细节"></a>跨域中HTTP请求交互的细节</h4><p>这里其实我知道，但是我可能当时根本没想到一点，后来洗头的时候灵感来了就想到是这个。</p>
+<p>跨域其实分简单请求和非简单请求，2种。一般要带自定义请求头都会是非简单请求，区别也很简单就是非简单请求会发送一个Options请求预检。服务器认可这个请求就对Options请求返回204，如果不认可就返回405。</p>
+<blockquote>
+<p>这里有更为官方的介绍</p>
+<p><a href="https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Access_control_CORS" target="_blank" rel="noopener">https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Access_control_CORS</a></p>
+</blockquote>
+<p>这里我写下代码。</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="keyword">echo</span> json_encode([</span><br><span class="line">    <span class="string">'code'</span> =&gt; <span class="number">200</span>,</span><br><span class="line">    <span class="string">'msg'</span> =&gt; <span class="string">'OK'</span>,</span><br><span class="line">    <span class="string">'data'</span> =&gt; [],</span><br><span class="line">]);</span><br></pre></td></tr></table></figure>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line">axios.get(<span class="string">'http://127.0.0.1:12226/test/index.php'</span>).then(<span class="function"><span class="params">data</span> =&gt;</span> <span class="built_in">console</span>.log(data))</span><br></pre></td></tr></table></figure>
+<p>然后Console中应该会有跨域提示，大概类似下方</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">test:1 Access to XMLHttpRequest at &apos;http://127.0.0.1:12226/test/index.php&apos; from origin &apos;http://localhost:8080&apos; has been blocked by CORS policy: Response to preflight request doesn&apos;t pass access control check: No &apos;Access-Control-Allow-Origin&apos; header is present on the requested resource.</span><br></pre></td></tr></table></figure>
+<p>我们根据浏览器的提示为代码加上Response的头信息，代码修改如下：</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">header(<span class="string">'Access-Control-Allow-Origin: http://localhost:8080'</span>);</span><br><span class="line">header(<span class="string">'Access-Control-Allow-Headers: x-auth,authorization'</span>);</span><br><span class="line">header(<span class="string">'Access-Control-Allow-Methods: DELETE,GET'</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">echo</span> json_encode([</span><br><span class="line">    <span class="string">'code'</span> =&gt; <span class="number">200</span>,</span><br><span class="line">    <span class="string">'msg'</span>  =&gt; <span class="string">'OK'</span>,</span><br><span class="line">    <span class="string">'data'</span> =&gt; [],</span><br><span class="line">]);</span><br></pre></td></tr></table></figure>
+<p>然后我们发现GET请求成功了，然后DELETE请求也成功了。但是我没有在Network面板中看到OPTIONS请求，然后我把代码改成了如下</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">header(<span class="string">'Access-Control-Allow-Origin: http://localhost:8080'</span>);</span><br><span class="line">header(<span class="string">'Access-Control-Allow-Headers: x-auth,authorization'</span>);</span><br><span class="line">header(<span class="string">'Access-Control-Allow-Methods: DELETE'</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> ($_SERVER[<span class="string">'REQUEST_METHOD'</span>] === <span class="string">'OPTIONS'</span>) &#123;</span><br><span class="line">    http_response_code(<span class="number">405</span>);</span><br><span class="line">    <span class="keyword">die</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">echo</span> json_encode([</span><br><span class="line">    <span class="string">'code'</span> =&gt; <span class="number">200</span>,</span><br><span class="line">    <span class="string">'msg'</span>  =&gt; <span class="string">'OK'</span>,</span><br><span class="line">    <span class="string">'data'</span> =&gt; [],</span><br><span class="line">]);</span><br></pre></td></tr></table></figure>
+<p>然后浏览器终于提示了如下信息</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Access to XMLHttpRequest at &apos;http://127.0.0.1:12226/test-composer-tree/index.php&apos; from origin &apos;http://localhost:8080&apos; has been blocked by CORS policy: Response to preflight request doesn&apos;t pass access control check: It does not have HTTP ok status.</span><br></pre></td></tr></table></figure>
+<p>然后我们把reponse返回的http code改成204。即正常返回，这里大概就是跨域中间的OPTIONS交互内容了。</p>
+<h4 id="对联合索引的认识"><a href="#对联合索引的认识" class="headerlink" title="对联合索引的认识"></a>对联合索引的认识</h4><blockquote>
+<p>参考信息：<a href="https://tech.meituan.com/2014/06/30/mysql-index.html" target="_blank" rel="noopener">https://tech.meituan.com/2014/06/30/mysql-index.html</a></p>
+</blockquote>
+<p>文章中摘取的总结：</p>
+<ol>
+<li>mysql会一直向右匹配直到遇到范围查询(&gt;、&lt;、between、like)就停止匹配</li>
+<li>=和in可以乱序</li>
+<li>选择区分度高的列作为索引</li>
+</ol>
+<p>建立（a,b,c）的联合索引，实际是出现了a,ab,abc，3个索引。下面是测试</p>
+<p>表结构大概是 <code>wd_product_map_id</code>、<code>wd_id</code>、<code>product_id</code>、<code>product_category_id</code></p>
+<p>建立一个<code>wd_id</code>、<code>product_id</code>、<code>product_category_id</code>, 名为<code>test</code>的联合索引</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="comment">#建立了3个索引</span></span><br><span class="line"><span class="keyword">EXPLAIN</span> </span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> t_wd_product_map </span><br><span class="line"><span class="keyword">where</span> wd_id = <span class="number">243645</span> </span><br><span class="line"><span class="keyword">and</span> product_id = <span class="number">833</span> </span><br><span class="line"><span class="keyword">and</span> product_category_id = <span class="number">164</span></span><br><span class="line"><span class="comment"># key: test</span></span><br><span class="line"><span class="comment"># ref: const,const,const</span></span><br><span class="line"><span class="comment"># rows: 1</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">EXPLAIN</span> </span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> t_wd_product_map </span><br><span class="line"><span class="keyword">where</span> wd_id = <span class="number">243645</span> </span><br><span class="line"><span class="keyword">and</span> product_id = <span class="number">833</span> </span><br><span class="line"><span class="comment"># key: test</span></span><br><span class="line"><span class="comment"># ref: const,const</span></span><br><span class="line"><span class="comment"># rows: 1</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">EXPLAIN</span> </span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> t_wd_product_map </span><br><span class="line"><span class="keyword">where</span> wd_id = <span class="number">243645</span> </span><br><span class="line"><span class="comment"># key: test</span></span><br><span class="line"><span class="comment"># ref: const</span></span><br><span class="line"><span class="comment"># rows: 41</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 没有包含wd_id 所以联合索引失效</span></span><br><span class="line"><span class="keyword">EXPLAIN</span> </span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> t_wd_product_map </span><br><span class="line"><span class="keyword">where</span> product_id = <span class="number">833</span></span><br><span class="line"><span class="keyword">and</span> product_category_id = <span class="number">164</span></span><br><span class="line"><span class="comment"># key: null</span></span><br><span class="line"><span class="comment"># ref: null</span></span><br><span class="line"><span class="comment"># rows: 1612393</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">#乱序测试</span></span><br><span class="line"><span class="keyword">EXPLAIN</span> </span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> t_wd_product_map </span><br><span class="line"><span class="keyword">where</span> product_category_id = <span class="number">164</span></span><br><span class="line"><span class="keyword">and</span> product_id = <span class="number">833</span> </span><br><span class="line"><span class="keyword">and</span> wd_id = <span class="number">243645</span> </span><br><span class="line"><span class="comment"># key: test</span></span><br><span class="line"><span class="comment"># ref: const,const,const</span></span><br><span class="line"><span class="comment"># rows: 1</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#or 会让索引失效</span></span><br><span class="line"><span class="keyword">EXPLAIN</span> </span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> t_wd_product_map </span><br><span class="line"><span class="keyword">where</span> product_category_id = <span class="number">164</span></span><br><span class="line"><span class="keyword">and</span> product_id = <span class="number">833</span> </span><br><span class="line"><span class="keyword">or</span> wd_id = <span class="number">243645</span> </span><br><span class="line"><span class="comment"># key: null</span></span><br><span class="line"><span class="comment"># ref: null</span></span><br><span class="line"><span class="comment"># rows: 1612393</span></span><br></pre></td></tr></table></figure>
+<h4 id="对Oauth2的认识"><a href="#对Oauth2的认识" class="headerlink" title="对Oauth2的认识"></a>对Oauth2的认识</h4><p>主要的流程应该是</p>
+<blockquote>
+<p> 客户端拼接请求跳转 =&gt; </p>
+<pre><code>服务端页面请求用户授权 =&gt; 
+
+        用户不同意授权 =&gt; 跳转回客户端页面，请求失败
+
+        用户同意授权 =&gt;  跳转回客户端页面带上`code`与`state`
+
+                客户端用`code`请求返回`access_token`与`refresh_token`
+</code></pre></blockquote>
+<p>下面是代码</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Oath2</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">protected</span> $code = <span class="number">222222</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">authorize</span><span class="params">($appId, $redirectUri, $state)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;assertAppId($appId);</span><br><span class="line"></span><br><span class="line">        $redirect = $redirectUri . <span class="string">"?code=&#123;$this-&gt;code&#125;&amp;state=&#123;$state&#125;"</span>;</span><br><span class="line">        header(<span class="string">"location:&#123;$redirect&#125;"</span>, <span class="keyword">true</span>, <span class="number">302</span>);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">accessToken</span><span class="params">($appId, $appSecret, $code)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;assertAppId($appId);</span><br><span class="line">        <span class="keyword">$this</span>-&gt;assertAppSecret($appSecret);</span><br><span class="line">        <span class="keyword">$this</span>-&gt;assertCode($code);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> json_decode([</span><br><span class="line">            <span class="string">"access_token"</span>  =&gt; <span class="string">"test1"</span>,</span><br><span class="line">            <span class="string">"expires_in"</span>    =&gt; <span class="number">7200</span>,</span><br><span class="line">            <span class="string">"refresh_token"</span> =&gt; <span class="string">"test2"</span>,</span><br><span class="line">        ]);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="Redis集群中数据同步的细节"><a href="#Redis集群中数据同步的细节" class="headerlink" title="Redis集群中数据同步的细节"></a>Redis集群中数据同步的细节</h4><h4 id="EasyWechat协程为什么要替换guzzle-handler"><a href="#EasyWechat协程为什么要替换guzzle-handler" class="headerlink" title="EasyWechat协程为什么要替换guzzle_handler"></a><code>EasyWechat</code>协程为什么要替换<code>guzzle_handler</code></h4><p>guzzle_handler是EasyWechat的封装，最后会赋值给Guzzle中的<code>HandlerStack</code>来替换Request中的请求方法。</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">下面是EasyWechat的代码跳转</span><br><span class="line"><span class="keyword">protected</span> <span class="function"><span class="keyword">function</span> <span class="title">getGuzzleHandler</span><span class="params">()</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (property_exists(<span class="keyword">$this</span>, <span class="string">'app'</span>) &amp;&amp; <span class="keyword">isset</span>(<span class="keyword">$this</span>-&gt;app[<span class="string">'guzzle_handler'</span>])) &#123;</span><br><span class="line">            <span class="keyword">return</span> is_string($handler = <span class="keyword">$this</span>-&gt;app-&gt;raw(<span class="string">'guzzle_handler'</span>))</span><br><span class="line">                        ? <span class="keyword">new</span> $handler()</span><br><span class="line">                        : $handler;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> \GuzzleHttp\choose_handler();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">=&gt;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">getHttpClient</span><span class="params">()</span>: <span class="title">ClientInterface</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (!(<span class="keyword">$this</span>-&gt;httpClient <span class="keyword">instanceof</span> ClientInterface)) &#123;</span><br><span class="line">            <span class="keyword">if</span> (property_exists(<span class="keyword">$this</span>, <span class="string">'app'</span>) &amp;&amp; <span class="keyword">$this</span>-&gt;app[<span class="string">'http_client'</span>]) &#123;</span><br><span class="line">                <span class="keyword">$this</span>-&gt;httpClient = <span class="keyword">$this</span>-&gt;app[<span class="string">'http_client'</span>];</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="keyword">$this</span>-&gt;httpClient = <span class="keyword">new</span> Client([<span class="string">'handler'</span> =&gt; HandlerStack::create(<span class="keyword">$this</span>-&gt;getGuzzleHandler())]);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">$this</span>-&gt;httpClient;</span><br><span class="line">    &#125;</span><br><span class="line">=&gt; </span><br><span class="line">  Guzzle HandlerStack类 ：</span><br><span class="line">  文档 ：https:<span class="comment">//docs.guzzlephp.org/en/stable/handlers-and-middleware.html</span></span><br></pre></td></tr></table></figure>
+<h4 id="Redis和MySQL如何保持最终一致性"><a href="#Redis和MySQL如何保持最终一致性" class="headerlink" title="Redis和MySQL如何保持最终一致性"></a>Redis和MySQL如何保持最终一致性</h4><p>首先明确<code>Redis</code>与<code>MySQL</code>完全不需要严格保证一致性。所有对一致性严格的要求都需要<code>MySQL</code>去做，即使提高并发水平，最后也是依靠<code>MySQL</code>去反查，去补偿其他软件的数据，从而保证最终一致性。</p>
+<p>在面试时，可以有介入很多方案去保证。但是一定要记住使用<code>Redis</code>初衷是为了提高并发，而不是凭空添加架构中的复杂度。这两者之间要做抉择。</p>
+
+
+    <!-- 显示photos -->
+    
+
+  </div>
+  <div class="post-tags">
+    
+  </div>
+</article>
+  
+    <div class="post-nav">
+      <div class="post-nav-item post-nav-next">
+        
+          <a href="/2020/06/16/学习前端历程/" rel="next" title="学习前端历程">
+            <span>〈 </span> 学习前端历程
+          </a>
+        
+      </div>
+  
+      <div class="post-nav-item post-nav-prev">
+        
+      </div>
+    </div>
+  
+
+
+  <div id="toc" class="toc-article">
+    <strong class="toc-title">目录</strong>
+    <ol class="toc"><li class="toc-item toc-level-4"><a class="toc-link" href="#目录"><span class="toc-text">目录</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#跨域中HTTP请求交互的细节"><span class="toc-text">跨域中HTTP请求交互的细节</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#对联合索引的认识"><span class="toc-text">对联合索引的认识</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#对Oauth2的认识"><span class="toc-text">对Oauth2的认识</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Redis集群中数据同步的细节"><span class="toc-text">Redis集群中数据同步的细节</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#EasyWechat协程为什么要替换guzzle-handler"><span class="toc-text">EasyWechat协程为什么要替换guzzle_handler</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Redis和MySQL如何保持最终一致性"><span class="toc-text">Redis和MySQL如何保持最终一致性</span></a></li></ol>
+  </div>
+
+
+    </div>
+
+    
+
+  </div>
+
+  <footer class="footer text-center">
+    <div id="bottom-inner">
+      
+        <a href="http://hexo.io" target="_blank" class="footer-link">Hexo</a>
+      
+        <a href="https://github.com/microacup/hexo-theme-micorb" target="_blank" class="footer-link">Theme microb</a>
+      
+    </div>
+  </footer>
+  
+
+<script>
+  // var titleTime,originTitle=document.title;document.addEventListener("visibilitychange",function(){document.hidden?(document.title="[闷声发大财中...] "+originTitle,clearTimeout(titleTime)):(document.title="[+1s] "+originTitle,titleTime=setTimeout(function(){document.title=originTitle},2e3))});
+</script>
+
+<script>
+  // (function (window, document) {
+  //   window.requestAnimationFrame = (function () {
+  //     return window.requestAnimationFrame ||
+  //       window.webkitRequestAnimationFrame ||
+  //       window.mozRequestAnimationFrame ||
+  //       window.oRequestAnimationFrame ||
+  //       window.msRequestAnimationFrame ||
+  //       function (callback) {
+  //         setTimeout(callback, 1000 / 60);
+  //       }
+  //   })();
+
+  //   function init() {
+  //     addMenuEvent();
+  //   }
+  //   init();
+
+  //   function addMenuEvent() {
+  //     var menu = document.getElementById('menu-main-post');
+  //     if (menu) {
+  //       var toc = document.getElementById('toc');
+  //       menu.title = toc ? '目录' : '回到顶部';
+  //       menu.onclick = function () {
+  //         if (toc) {
+  //           if (toc.style.display == 'block') {
+  //             toc.style.display = 'none';
+  //           } else {
+  //             toc.style.display = 'block';
+  //           }
+  //         } else {
+  //           returnTop();
+  //         }
+  //       };
+  //     }
+  //   }
+
+  //   var timer = null;
+
+  //   function returnTop() {
+  //     cancelAnimationFrame(timer);
+  //     timer = requestAnimationFrame(function fn() {
+  //       var oTop = document.body.scrollTop || document.documentElement.scrollTop;
+  //       if (oTop > 0) {
+  //         document.body.scrollTop = document.documentElement.scrollTop = oTop - 50;
+  //         timer = requestAnimationFrame(fn);
+  //       } else {
+  //         cancelAnimationFrame(timer);
+  //       }
+  //     });
+  //   }
+
+  // })(window, document);
+</script>
+
+
+  
+
+
+
+</body>
+</html>
