@@ -1,0 +1,225 @@
+
+<!DOCTYPE html>
+<html lang="">
+
+
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="theme-color" content="#202020">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  
+    <meta name="keywords" content>
+  
+
+  
+    <meta name="description" content="php8的新特性">
+  
+  
+  <link rel="icon" type="image/x-icon" href="/logo.png">
+  <title>php8的新特性 [ Void ]</title>
+  
+    <!-- stylesheets list from config.yml -->
+    
+      <link rel="stylesheet" href="//cdn.bootcss.com/pure/1.0.0/pure-min.css">
+    
+      <link rel="stylesheet" href="/css/microb.css">
+    
+      <link rel="stylesheet" href="/css/iconfont.css">
+    
+  
+</head>
+
+<body>
+  <nav class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
+  <!-- <ul class="pure-menu-list float-r clearfix">
+    
+      <li class="pure-menu-item toc-menu">
+        <a id="menu-main-post" class="pure-menu-link" href="javascript:;">
+          <img class="menu-icon" src="/logo.png" alt="MENU">
+        </a>
+      </li>
+    
+  </ul>   -->
+  <a class="pure-menu-heading" href="/">
+      <h1 class="title">Void</h1>
+      <!-- <span>一个后端程序员</span> -->
+  </a>
+
+  <a href="/about" class="pure-menu-item pure-menu-has-children">
+    <h2 class="subtitle">about</h2>
+  </a>
+
+  <!-- 
+  <img class="logo" id="logo" src="/logo.png" alt="logo">
+   -->
+</nav>
+
+  <div class="container" id="content-outer">
+    <div class="inner" id="content-inner">
+      <article class="post" id="post">
+  <header class="post-header text-center">
+    <h1 class="title">
+      php8的新特性
+    </h1>
+    
+    <time class="time" datetime="2020-12-08T15:15:52.000Z">
+      2020-12-08
+    </time>
+    
+    <hr>
+  </header>
+  <div class="post-content">
+    <p>这里自己根据文档体会一下PHP8的特性。</p>
+<ul>
+<li><strong>Named arguments</strong> </li>
+</ul>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">这个特性 大概就是你可以跳过默认值来使用方法了。不好描述直接根据官方的例子来举例</span><br><span class="line">  </span><br><span class="line">官方的例子是用了一个内置函数</span><br><span class="line">  </span><br><span class="line">  <span class="function"><span class="keyword">function</span> <span class="title">htmlentities</span> <span class="params">($string, $flags = null, $encoding = null, $double_encode = true)</span> </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">这个函数需要赋予第一个参数的值，后续参数均有默认值，如果你要给最后一个参数赋值那么PHP7中必须这样调用</span><br><span class="line">  </span><br><span class="line">php7：  htmlspecialchars($string, ENT_COMPAT | ENT_HTML401, <span class="string">'UTF-8'</span>, <span class="keyword">false</span>);</span><br><span class="line"></span><br><span class="line">而PHP8中这个特性的意义就是可以让你避开前面<span class="number">2</span>个默认值，大概是这样的</span><br><span class="line">  </span><br><span class="line">php8:   htmlspecialchars($string, double_encode: <span class="keyword">false</span>);</span><br></pre></td></tr></table></figure>
+<ul>
+<li><strong>Attributes</strong></li>
+</ul>
+<p>这是PHP8中近乎最大的更新。也就是PHP的官方注解终于到了，不用依赖Symfony的注解库来解析PHPDOC了。</p>
+<blockquote>
+<p>这是官方的例子。大概就是利用SetUp这个注解类来判断方法是否执行</p>
+<p><a href="https://www.php.net/manual/en/language.attributes.overview.php" target="_blank" rel="noopener">https://www.php.net/manual/en/language.attributes.overview.php</a></p>
+</blockquote>
+<p>我们利用注解来实现一下注解路由。首先我们定义一下路由类<code>Route.php</code></p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="comment">#这里与其他注解相同 声明是什么注解类</span></span><br><span class="line"><span class="comment">#[Attribute(Attribute::TARGET_METHOD)]</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Route</span> </span>&#123;</span><br><span class="line">    <span class="keyword">const</span> METHOD_GET = <span class="string">'GET'</span>;</span><br><span class="line">    <span class="keyword">const</span> METHOD_POST = <span class="string">'POST'</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">protected</span> string $uri;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">array</span> $methods = [];</span><br><span class="line">		</span><br><span class="line">  	<span class="comment">#这里利用了PHP8另外一个特性 自动初始化属性</span></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">(string $uri, array $methods)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后我们写一个<code>Controller</code>。</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">use</span> <span class="title">App</span>\<span class="title">Route</span>;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">TestController</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">#[Route('/api/test', [Route::METHOD_GET])]</span></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">test</span><span class="params">()</span>:<span class="title">string</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">'test'</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">#[Route('/api/hello', [Route::METHOD_POST])]</span></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">hello</span><span class="params">()</span>:<span class="title">string</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">'hello'</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>后续我们利用<code>nikic/fast-route</code>这个包简单的写一下路由驱动</p>
+<blockquote>
+<p><a href="https://github.com/nikic/FastRoute" target="_blank" rel="noopener">https://github.com/nikic/FastRoute</a> FastRoute</p>
+</blockquote>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">RouteDispatcher</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">array</span> $routeMap = [];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">protected</span> Dispatcher $dispatcher;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 扫描路由</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> string $dir</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@throws</span> \ReflectionException</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">scan</span><span class="params">(string $dir = <span class="string">"Controller"</span>)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        $controllerDir = <span class="keyword">__DIR__</span> . <span class="string">"/&#123;$dir&#125;/"</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">foreach</span> (<span class="keyword">$this</span>-&gt;listDir($controllerDir) <span class="keyword">as</span> $file) &#123;</span><br><span class="line">            $fileSplitArray = explode(<span class="string">'.'</span>, $file);</span><br><span class="line">            $namespace      = <span class="string">"App\Controller\\&#123;$fileSplitArray[0]&#125;"</span>;</span><br><span class="line"></span><br><span class="line">            $reflection = <span class="keyword">new</span> \ReflectionClass($namespace);</span><br><span class="line">            $methods    = $reflection-&gt;getMethods();</span><br><span class="line">            <span class="keyword">foreach</span> ($methods <span class="keyword">as</span> $method) &#123;</span><br><span class="line">                $attributes = $method-&gt;getAttributes(Route::class);</span><br><span class="line">                <span class="keyword">if</span> (count($attributes) &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                    $attribute = $attributes[<span class="number">0</span>];</span><br><span class="line">                    <span class="keyword">$this</span>-&gt;appendRoute($attribute, $reflection, $method);</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="keyword">continue</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//解析路由到fast-route</span></span><br><span class="line">        <span class="keyword">$this</span>-&gt;dispatcher = simpleDispatcher(<span class="function"><span class="keyword">function</span> <span class="params">(RouteCollector $r)</span> </span>&#123;</span><br><span class="line">            <span class="keyword">foreach</span> (<span class="keyword">$this</span>-&gt;routeMap <span class="keyword">as</span> $uri =&gt; $route) &#123;</span><br><span class="line">                <span class="keyword">foreach</span> ($route[<span class="string">'methods'</span>] <span class="keyword">as</span> $method) &#123;</span><br><span class="line">                    $r-&gt;addRoute($method, $uri, $route[<span class="string">'handler'</span>]);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 追加路由</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> \ReflectionAttribute $attribute</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> \ReflectionClass $class</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> \ReflectionMethod $method</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">protected</span> <span class="function"><span class="keyword">function</span> <span class="title">appendRoute</span><span class="params">(\ReflectionAttribute $attribute, \ReflectionClass $class, \ReflectionMethod $method)</span>: <span class="title">void</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        [$uri, $methods] = $attribute-&gt;getArguments();</span><br><span class="line">        <span class="keyword">$this</span>-&gt;routeMap[$uri] = [</span><br><span class="line">            <span class="string">'methods'</span> =&gt; $methods,</span><br><span class="line">            <span class="string">'handler'</span> =&gt; [</span><br><span class="line">                $class-&gt;getName(),</span><br><span class="line">                $method-&gt;getName()</span><br><span class="line">            ]</span><br><span class="line">        ];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">protected</span> <span class="function"><span class="keyword">function</span> <span class="title">listDir</span><span class="params">(string $dir)</span>: \<span class="title">Generator</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (is_dir($dir) === <span class="keyword">false</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> \InvalidArgumentException(<span class="string">'invalid dir'</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        $exceptions = [<span class="string">'.'</span>, <span class="string">'..'</span>];</span><br><span class="line"></span><br><span class="line">        $files = scandir($dir);</span><br><span class="line">        <span class="keyword">foreach</span> ($files <span class="keyword">as</span> $file) &#123;</span><br><span class="line">            <span class="keyword">if</span> (in_array($file, $exceptions)) &#123;</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">yield</span> $file;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">dispatcher</span><span class="params">(string $method, string $uri)</span>: <span class="title">array</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">$this</span>-&gt;dispatcher-&gt;dispatch($method, $uri);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>最后写一下入口文件<code>index.php</code></p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">require_once</span> <span class="string">'vendor/autoload.php'</span>;</span><br><span class="line">$dispatcher = (<span class="keyword">new</span> \App\RouteDispatcher());</span><br><span class="line">$dispatcher-&gt;scan();</span><br><span class="line"></span><br><span class="line">$method = $_SERVER[<span class="string">'REQUEST_METHOD'</span>];</span><br><span class="line">$uri = $_SERVER[<span class="string">'REQUEST_URI'</span>];</span><br><span class="line"></span><br><span class="line">$routeInfo = $dispatcher-&gt;dispatcher($method, $uri);</span><br><span class="line"><span class="keyword">switch</span> ($routeInfo[<span class="number">0</span>]) &#123;</span><br><span class="line">    <span class="keyword">case</span> FastRoute\Dispatcher::NOT_FOUND:</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(<span class="string">'invalid route'</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">case</span> FastRoute\Dispatcher::METHOD_NOT_ALLOWED:</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(<span class="string">'invalid method'</span>);</span><br><span class="line">    <span class="keyword">case</span> FastRoute\Dispatcher::FOUND:</span><br><span class="line">        $routeInfo[<span class="number">1</span>][<span class="number">0</span>] = <span class="keyword">new</span> $routeInfo[<span class="number">1</span>][<span class="number">0</span>]();</span><br><span class="line">        $response = call_user_func_array($routeInfo[<span class="number">1</span>], $routeInfo[<span class="number">2</span>]);</span><br><span class="line">        <span class="keyword">echo</span> $response;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后我们顺利成章的访问<code>api/test</code>就会显示<code>echo</code>出<code>test</code>字符串了。</p>
+<p>这里的逻辑主要是<code>scan</code>出所有的Controller类，然后分析出他们的命名空间。根据反射类解析出类对象，类方法，类注解。根据类注解中定义的路由与方法追加至<code>FastRoute</code>。最后由<code>FastRoute</code>根据路由解析出控制器与方法。最后调用控制器与方法即完成整套逻辑。</p>
+<ul>
+<li><strong>Constructor property promotion</strong></li>
+</ul>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">这就是我上面用的新特性即不需要对构造函数中的属性额外赋值</span><br><span class="line">  php7:</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Route</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">(string $uri, array $methods)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;uri     = $uri;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;methods = $methods;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">	等同于</span><br><span class="line">  php8:</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Route</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">(string $uri, array $methods)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><strong>Union types</strong></li>
+</ul>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">这也是PHP8中比较重要的特性</span><br><span class="line"></span><br><span class="line">PHP7<span class="number">.2</span>完善了方法参数的类型</span><br><span class="line">PHP7<span class="number">.4</span>中可以对对象中属性定义类型</span><br><span class="line">PHP8中 联合类型来了 </span><br><span class="line"></span><br><span class="line">php <span class="number">8</span>:</span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">getNumber</span><span class="params">(int|float $number)</span>: <span class="title">float</span>|<span class="title">int</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> $number;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><strong>Match expression</strong></li>
+</ul>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="keyword">switch</span>的语法糖 直接搬运官网例子了</span><br><span class="line">  </span><br><span class="line">  PHP <span class="number">7</span> ：</span><br><span class="line">  <span class="keyword">switch</span> (<span class="number">8.0</span>) &#123;</span><br><span class="line">  	<span class="keyword">case</span> <span class="string">'8.0'</span>:</span><br><span class="line">    	$result = <span class="string">"Oh no!"</span>;</span><br><span class="line">    	<span class="keyword">break</span>;</span><br><span class="line">  	<span class="keyword">case</span> <span class="number">8.0</span>:</span><br><span class="line">    	$result = <span class="string">"This is what I expected"</span>;</span><br><span class="line">    	<span class="keyword">break</span>;</span><br><span class="line">		&#125;</span><br><span class="line">	<span class="keyword">echo</span> $result;</span><br><span class="line">	<span class="comment">//&gt; Oh no!</span></span><br><span class="line">  </span><br><span class="line">	php <span class="number">8</span>：</span><br><span class="line">    <span class="keyword">echo</span> match (<span class="number">8.0</span>) &#123;</span><br><span class="line">  		<span class="string">'8.0'</span> =&gt; <span class="string">"Oh no!"</span>,</span><br><span class="line">  		<span class="number">8.0</span> =&gt; <span class="string">"This is what I expected"</span>,</span><br><span class="line">		&#125;;</span><br><span class="line">	<span class="comment">//&gt; This is what I expected</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li><strong>Nullsafe operator</strong> </li>
+</ul>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">这里官方的例子比较抽象 我举个更贴近业务的例子 比如说User 和 Adress 是一对一的关系</span><br><span class="line">class User() &#123;</span><br><span class="line">  <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">address</span><span class="params">()</span>: <span class="title">HasOne</span></span></span><br><span class="line"><span class="function">  </span>&#123;</span><br><span class="line">     <span class="keyword">return</span> <span class="keyword">$this</span>-&gt;hasOne(Address:<span class="class"><span class="keyword">class</span>);</span></span><br><span class="line"><span class="class">  &#125;</span></span><br><span class="line"><span class="class">&#125;</span></span><br><span class="line"><span class="class"></span></span><br><span class="line"><span class="class">作为<span class="title">Model</span>中一对一是很常见的事情。比如说我这里需要某个接口返回<span class="title">address</span>中的<span class="title">provin</span> 省字段</span></span><br><span class="line"><span class="class">在<span class="title">PHP7</span>中 你只能这样写</span></span><br><span class="line">public function getProvince(User $user): ?string</span><br><span class="line">&#123;</span><br><span class="line">    $address = $user-&gt;address;</span><br><span class="line">    <span class="keyword">if</span> ($address !== <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> $address-&gt;province;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">	但是在PHP8中 这个语法糖你可以一行写完代码</span><br><span class="line">  <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">getProvince</span><span class="params">(User $user)</span>: ?<span class="title">string</span> </span></span><br><span class="line"><span class="function">  </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> $user?-&gt;$address-&gt;province</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+
+    <!-- 显示photos -->
+    
+
+  </div>
+  <div class="post-tags">
+    
+  </div>
+</article>
+  
+    <div class="post-nav">
+      <div class="post-nav-item post-nav-next">
+        
+          <a href="/2020/11/07/面试题汇总学习（持续更新）/" rel="next" title="面试题汇总学习（持续更新）">
+            <span>〈 </span> 面试题汇总学习（持续更新）
+          </a>
+        
+      </div>
+  
+      <div class="post-nav-item post-nav-prev">
+        
+      </div>
+    </div>
+  
+
+
+
+    </div>
+
+    
+
+  </div>
+
+  <footer class="footer text-center">
+    <div id="bottom-inner">
+      
+        <a href="http://hexo.io" target="_blank" class="footer-link">Hexo</a>
+      
+        <a href="https://github.com/microacup/hexo-theme-micorb" target="_blank" class="footer-link">Theme microb</a>
+      
+    </div>
+  </footer>
+  
+
+<script>
+  // var titleTime,originTitle=document.title;document.addEventListener("visibilitychange",function(){document.hidden?(document.title="[闷声发大财中...] "+originTitle,clearTimeout(titleTime)):(document.title="[+1s] "+originTitle,titleTime=setTimeout(function(){document.title=originTitle},2e3))});
+</script>
+
+<script>
+  // (function (window, document) {
+  //   window.requestAnimationFrame = (function () {
+  //     return window.requestAnimationFrame ||
+  //       window.webkitRequestAnimationFrame ||
+  //       window.mozRequestAnimationFrame ||
+  //       window.oRequestAnimationFrame ||
+  //       window.msRequestAnimationFrame ||
+  //       function (callback) {
+  //         setTimeout(callback, 1000 / 60);
+  //       }
+  //   })();
+
+  //   function init() {
+  //     addMenuEvent();
+  //   }
+  //   init();
+
+  //   function addMenuEvent() {
+  //     var menu = document.getElementById('menu-main-post');
+  //     if (menu) {
+  //       var toc = document.getElementById('toc');
+  //       menu.title = toc ? '目录' : '回到顶部';
+  //       menu.onclick = function () {
+  //         if (toc) {
+  //           if (toc.style.display == 'block') {
+  //             toc.style.display = 'none';
+  //           } else {
+  //             toc.style.display = 'block';
+  //           }
+  //         } else {
+  //           returnTop();
+  //         }
+  //       };
+  //     }
+  //   }
+
+  //   var timer = null;
+
+  //   function returnTop() {
+  //     cancelAnimationFrame(timer);
+  //     timer = requestAnimationFrame(function fn() {
+  //       var oTop = document.body.scrollTop || document.documentElement.scrollTop;
+  //       if (oTop > 0) {
+  //         document.body.scrollTop = document.documentElement.scrollTop = oTop - 50;
+  //         timer = requestAnimationFrame(fn);
+  //       } else {
+  //         cancelAnimationFrame(timer);
+  //       }
+  //     });
+  //   }
+
+  // })(window, document);
+</script>
+
+
+  
+
+
+
+</body>
+</html>
